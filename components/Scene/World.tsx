@@ -4,7 +4,7 @@ import { useFrame, ThreeEvent } from '@react-three/fiber';
 import { Grid, Text, Float, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { useOpticalStore } from '../../store/useOpticalStore';
-import { calculateOptics, getSensorDimensions } from '../../utils/optics';
+import { calculateOptics, getSensorDimensions, SENSOR_DATA } from '../../utils/optics';
 
 // Workaround for missing types in the THREE namespace
 const T = THREE as any;
@@ -28,6 +28,21 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
   const foreRef = useRef<any>(null);
 
   const CAM_Z = 0.2;
+  // Camera visualization dimensions (meters)
+  const lensCenterZ = 0; // optical center at group origin
+  const camBodyDims = { width: 0.45, height: 0.28, depth: 0.25 };
+
+  // Decorative lens length scales with focal length:
+  // short barrel for wide-angle, long barrel for telephoto.
+  const BASE_LENS_LENGTH = 0.35;
+  const lensLengthScale = T.MathUtils.clamp(focalLength / 50, 0.5, 2.0);
+  const lensBarrelLength = BASE_LENS_LENGTH * lensLengthScale;
+  const lensBarrelCenterZ = -lensBarrelLength / 2;
+  const focusRingLength = 0.09;
+  const focusRingCenterZ = lensBarrelCenterZ + lensBarrelLength * 0.25;
+  const frontGlassThickness = 0.03;
+  const frontGlassCenterZ =
+    lensBarrelCenterZ - lensBarrelLength / 2 - frontGlassThickness / 2;
 
   // Calculate Optics for Visual Guides
   const metrics = useMemo(() => 
@@ -94,6 +109,45 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
     };
 
   }, [sensorType, focalLength, focusDistance, metrics]);
+
+  // --- Lens / Sensor model in image space (Studio mode visualization) ---
+  const lensModel = useMemo(() => {
+    const f = focalLength / 1000; // focal length in meters
+    const L = Math.max(f + 0.001, focusDistance); // clamp to avoid division by zero when s ≈ f
+
+    // Thin lens formula: 1/f = 1/L + 1/v  =>  v = fL / (L - f)
+    let imageDistance = f;
+    const denom = L - f;
+    if (Math.abs(denom) > 1e-4) {
+      imageDistance = (f * L) / denom;
+    }
+
+    const { width: sensorWmm, height: sensorHmm } = getSensorDimensions(sensorType);
+    const sensorW = sensorWmm / 1000;
+    const sensorH = sensorHmm / 1000;
+
+    // Depth of focus (image space) approximate: Δv ≈ 2 N σ (1 + m)^2
+    const coc = SENSOR_DATA[sensorType].coc / 1000; // m
+    const N = aperture;
+    const m = imageDistance / L;
+    const depthOfFocus = 2 * N * coc * (1 + m) * (1 + m);
+    const vNear = imageDistance - depthOfFocus / 2;
+    const vFar = imageDistance + depthOfFocus / 2;
+
+    // Place camera body behind far focus plane, leaving a small gap
+    const bodyDepth = camBodyDims.depth;
+    const bodyCenterZ = vFar + bodyDepth / 2 + 0.03;
+
+    return {
+      imageDistance,
+      sensorW,
+      sensorH,
+      vNear,
+      vFar,
+      bodyCenterZ,
+      bodyDepth,
+    };
+  }, [aperture, focalLength, focusDistance, sensorType]);
 
 
   useFrame((state) => {
@@ -284,18 +338,130 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
 
       {/* Camera Representation (Only visible in Studio Mode) */}
       {mode === 'studio' && (
-        <group position={[cameraX, cameraY - 0.5, CAM_Z - 0.2]}> {/* Adjust to center visual mesh on camera point */}
-           <mesh position={[0, 0, 0]}>
-              <boxGeometry args={[0.4, 0.4, 0.6]} />
-              <meshStandardMaterial color="#cbd5e1" />
-           </mesh>
-           <mesh position={[0, 0, -0.4]} rotation={[Math.PI/2, 0, 0]}>
-              <cylinderGeometry args={[0.15, 0.2, 0.4]} />
-              <meshStandardMaterial color="#334155" />
-           </mesh>
-           <Text position={[0, 0.5, 0]} fontSize={0.25} color="white">
+        <group position={[cameraX, cameraY, CAM_Z]}>
+          {/* --- Camera body block (highly transparent) --- */}
+          <mesh position={[0, 0, lensModel.bodyCenterZ]}>
+            <boxGeometry args={[camBodyDims.width, camBodyDims.height, camBodyDims.depth]} />
+            <meshStandardMaterial
+              color="#e5e7eb"
+              transparent
+              opacity={0.15}
+              metalness={0.1}
+              roughness={0.4}
+            />
+          </mesh>
+
+          {/* Front mount block */}
+          <mesh position={[0, 0, lensModel.imageDistance * 0.4]}>
+            <boxGeometry args={[camBodyDims.width * 0.7, camBodyDims.height * 0.9, 0.08]} />
+            <meshStandardMaterial
+              color="#cbd5f5"
+              transparent
+              opacity={0.12}
+              metalness={0.15}
+              roughness={0.5}
+            />
+          </mesh>
+
+          {/* Top handle */}
+          <mesh position={[0, camBodyDims.height / 2 + 0.06, lensModel.bodyCenterZ - camBodyDims.depth * 0.2]}>
+            <boxGeometry args={[camBodyDims.width * 0.8, 0.05, camBodyDims.depth * 0.6]} />
+            <meshStandardMaterial
+              color="#e5e7eb"
+              transparent
+              opacity={0.18}
+              metalness={0.15}
+              roughness={0.4}
+            />
+          </mesh>
+
+          {/* Side EVF block */}
+          <mesh position={[-camBodyDims.width / 2 - 0.08, camBodyDims.height / 4, lensModel.bodyCenterZ + camBodyDims.depth * 0.1]}>
+            <boxGeometry args={[0.16, 0.16, 0.18]} />
+            <meshStandardMaterial
+              color="#e5e7eb"
+              transparent
+              opacity={0.18}
+              metalness={0.15}
+              roughness={0.4}
+            />
+          </mesh>
+
+          {/* --- Lens barrel (transparent, length depends on focal length) --- */}
+          <mesh position={[0, 0, lensBarrelCenterZ]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, lensBarrelLength, 32]} />
+            <meshStandardMaterial
+              color="#e0f2fe"
+              transparent
+              opacity={0.18}
+              metalness={0.2}
+              roughness={0.25}
+            />
+          </mesh>
+
+          {/* Focus ring */}
+          <mesh position={[0, 0, focusRingCenterZ]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.13, 0.13, focusRingLength, 32]} />
+            <meshStandardMaterial
+              color="#bae6fd"
+              transparent
+              opacity={0.2}
+              metalness={0.2}
+              roughness={0.5}
+            />
+          </mesh>
+
+          {/* Front glass element (slightly convex disc) */}
+          <mesh position={[0, 0, frontGlassCenterZ]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.1, 0.1, frontGlassThickness, 32]} />
+            <meshStandardMaterial
+              color="#38bdf8"
+              transparent
+              opacity={0.4}
+              metalness={0.2}
+              roughness={0.08}
+            />
+          </mesh>
+
+          {/* --- Optical model: cone + CMOS --- */}
+          {/* Reverse cone from optical center (0,0,0) to sensor plane */}
+          <mesh position={[0, 0, lensModel.imageDistance / 2]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.06, 0.12, lensModel.imageDistance, 16, 1, true]} />
+            <meshStandardMaterial color="#38bdf8" transparent opacity={0.3} />
+          </mesh>
+
+          {/* CMOS sensor plane (blue rectangle), size from sensor data */}
+          <mesh position={[0, 0, lensModel.imageDistance]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[lensModel.sensorW, lensModel.sensorH]} />
+            <meshStandardMaterial color="#22d3ee" emissive="#0ea5e9" emissiveIntensity={0.3} transparent opacity={0.9} side={T.DoubleSide} />
+          </mesh>
+
+          {/* Depth of focus region in image space (soft guides) */}
+          <mesh position={[0, 0, lensModel.vNear]} rotation={[0, Math.PI, 0]} raycast={() => null}>
+            <planeGeometry args={[lensModel.sensorW * 1.05, lensModel.sensorH * 1.05]} />
+            <meshBasicMaterial color="#38bdf8" opacity={0.06} transparent side={T.DoubleSide} />
+          </mesh>
+          <mesh position={[0, 0, lensModel.vFar]} rotation={[0, Math.PI, 0]} raycast={() => null}>
+            <planeGeometry args={[lensModel.sensorW * 1.05, lensModel.sensorH * 1.05]} />
+            <meshBasicMaterial color="#38bdf8" opacity={0.06} transparent side={T.DoubleSide} />
+          </mesh>
+
+          {/* Rays from optical center to sensor corners */}
+          {(() => {
+            const corners: [number, number, number][] = [
+              [ lensModel.sensorW / 2,  lensModel.sensorH / 2, lensModel.imageDistance],
+              [-lensModel.sensorW / 2,  lensModel.sensorH / 2, lensModel.imageDistance],
+              [ lensModel.sensorW / 2, -lensModel.sensorH / 2, lensModel.imageDistance],
+              [-lensModel.sensorW / 2, -lensModel.sensorH / 2, lensModel.imageDistance],
+            ];
+            return corners.map((c, idx) => (
+              <Line key={idx} points={[[0, 0, lensCenterZ], c]} color="#38bdf8" lineWidth={1} transparent opacity={0.7} />
+            ));
+          })()}
+
+          <Text position={[0, camBodyDims.height / 2 + 0.18, lensModel.bodyCenterZ]} fontSize={0.23} color="white">
             Sensor Plane ( X = {cameraX}m, Y = {cameraY}m)
-           </Text>
+          </Text>
         </group>
       )}
     </>

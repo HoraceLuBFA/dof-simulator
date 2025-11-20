@@ -101,7 +101,7 @@ export const useOpticalStore = create<ExtendedState>((set, get) => ({
     switch (type) {
       case 'portrait':
         // Target: ~85mm Full Frame Equivalent
-        set({ focalLength: getFocal(85), aperture: 1.8, focusDistance: distGreen });
+        set({ focalLength: getFocal(85), aperture: 2.8, focusDistance: distGreen });
         break;
       case 'landscape':
         // Target: ~24mm Full Frame Equivalent
