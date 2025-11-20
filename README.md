@@ -26,9 +26,7 @@ An advanced, physics-based educational tool that visualizes and simulates camera
 ## 📐 Optical Formulas
 1. **Hyperfocal Distance:**
 
-   $$
-   H = \frac{f^2}{N \times c} + f
-   $$
+$$H = \frac{f^2}{N \times c} + f$$
 
 2. **Bokeh Diameter at Infinity:**
 
