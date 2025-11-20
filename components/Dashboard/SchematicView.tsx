@@ -162,9 +162,12 @@ export const SchematicView: React.FC = () => {
   `;
 
   // DoF Zone
+  const cappedFar = Math.min(metrics.farLimit, farLimitMeters);
+  const showFullFar = metrics.farLimit === Infinity || metrics.farLimit >= WORLD_DEPTH_METERS;
+
   const wNear = getFrustumHalfWidthPx(metrics.nearLimit);
-  const wFar = getFrustumHalfWidthPx(Math.min(metrics.farLimit, farLimitMeters));
-  const yFarReal = metrics.farLimit === Infinity ? mapZ(farLimitMeters) : mapZ(metrics.farLimit);
+  const wFar = showFullFar ? frustumW : getFrustumHalfWidthPx(cappedFar);
+  const yFarReal = showFullFar ? frustumY : mapZ(cappedFar);
 
   const dofPath = `
     M ${cameraSvgX - wNear} ${nearY}

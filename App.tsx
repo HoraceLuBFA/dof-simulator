@@ -12,7 +12,7 @@ function App() {
       {/* Two-row layout: top (experience) and bottom (dashboard).
           On large screens we stay in desktop layout based on width only; height squeezes just introduce scroll.
       */}
-    <div className="flex-1 flex flex-col lg:grid lg:grid-rows-[auto_auto]">
+    <div className="flex-1 flex flex-col lg:grid lg:grid-rows-[auto_auto] lg:content-start">
         {/* Top Section: Split View 
             Mobile: Stacked vertically.
             Desktop: Side-by-side (row).
