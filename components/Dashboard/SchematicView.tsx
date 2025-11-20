@@ -183,7 +183,7 @@ export const SchematicView: React.FC = () => {
   return (
     <div 
       ref={containerRef} 
-      className="w-full aspect-video min-h-[300px] lg:min-h-[320px] overflow-hidden relative flex flex-col select-none px-2 sm:px-4 pt-10 pb-4 lg:aspect-video"
+      className="w-full aspect-[2/1] min-h-[300px] lg:min-h-[320px] overflow-hidden relative flex flex-col select-none px-2 sm:px-4 pt-10 pb-4 lg:aspect-[2/1]]"
     >
         <p className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-cyan-300 bg-slate-900/80 px-2 py-1 rounded border border-cyan-800/60 backdrop-blur pointer-events-none">
           Schematic (Drag Points)

@@ -40,17 +40,17 @@ function App() {
           {/* Visualizer (Left) - Swapped Position 
               Added aspect ratio to force height scaling on wide screens.
           */}
-          <div className="w-full lg:col-span-6 bg-slate-900/50 relative border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col lg:aspect-video lg:h-auto">
+          <div className="w-full lg:col-span-6 bg-slate-900/50 relative border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col lg:aspect-[2/1] lg:h-auto">
             <SchematicView />
           </div>
 
           {/* Controls (Center) - Swapped Position */}
-          <div className="w-full lg:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 flex flex-col h-full min-h-[400px] lg:min-h-0 lg:max-h-[calc(100vw/2.2)] lg:overflow-y-auto">
+          <div className="w-full lg:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 flex flex-col h-full min-h-[300px] lg:min-h-0 lg:max-h-[calc(100vw/2.2)] lg:overflow-y-auto">
             <ControlPanel />
           </div>
 
           {/* Math (Right) */}
-          <div className="w-full lg:col-span-3 bg-slate-900/50 flex flex-col h-full min-h-[400px] lg:min-h-0 lg:max-h-[calc(100vw/2.2)] lg:overflow-y-auto">
+          <div className="w-full lg:col-span-3 bg-slate-900/50 flex flex-col h-full min-h-[300px] lg:min-h-0 lg:max-h-[calc(100vw/2.2)] lg:overflow-y-auto">
             <MathPanel />
           </div>
 
