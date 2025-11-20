@@ -31,7 +31,8 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
 
   // Calculate Optics for Visual Guides
   const metrics = useMemo(() => 
-    calculateOptics(focalLength, aperture, focusDistance + CAM_Z, sensorType),
+    // 这里必须使用真实的对焦距离；此前额外加上 CAM_Z 会让近限向后偏移，导致 Studio 视图里“前景深”视觉为 0
+    calculateOptics(focalLength, aperture, focusDistance, sensorType),
     [focalLength, aperture, focusDistance, sensorType]
   );
 
@@ -63,8 +64,8 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
     const dimsNear = getDimsAt(zNear);
     const dimsFar = getDimsAt(zFar);
     const dofDepth = zFar - zNear;
-    // Center Z relative to camera (negative Z)
-    const dofCenterZ = - (zNear + dofDepth / 2);
+    // Center Z relative to camera (negative Z)，并补偿 CAM_Z，使世界坐标与示意图一致
+    const dofCenterZ = - (zNear + dofDepth / 2 + CAM_Z);
 
     // 3. Full View Cone (Wireframe)
     // Use a large fixed distance to simulate "infinity"
@@ -73,11 +74,13 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
 
     return {
         aspect,
-        focus: { w: focusDims.w, h: focusDims.h, z: -focusDistance },
+        // 将局部 Z 坐标向后平移 CAM_Z，以确保世界坐标中的焦平面正好位于 focusDistance 处
+        focus: { w: focusDims.w, h: focusDims.h, z: -(focusDistance + CAM_Z) },
         dof: {
             wNear: dimsNear.w,
             wFar: dimsFar.w,
             depth: dofDepth,
+            // 同样平移中心，使前/后景深跨越的世界坐标与指标一致
             z: dofCenterZ,
             // Radius for CylinderGeometry (4 segments, rotated 45deg)
             radiusTop: dimsFar.w / Math.SQRT2,
