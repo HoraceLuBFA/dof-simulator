@@ -1,0 +1,5 @@
+{
+  "name": "Optical Lab: DoF Simulator",
+  "description": "A scientific, interactive 3D depth-of-field simulator visualizing optical physics with real-time formulas and a schematic dashboard.",
+  "requestFramePermissions": []
+}
