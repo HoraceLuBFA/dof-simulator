@@ -78,9 +78,9 @@ export const useOpticalStore = create<ExtendedState>((set, get) => ({
   resetCamera: () => set({ cameraX: 0, cameraY: 1.0 }),
 
   resetScene: () => set({
-    distBlue: 3.0,
-    distGreen: 6.0,
-    distRed: 9.0,
+    distBlue: 5.0,
+    distGreen: 10.0,
+    distRed: 15.0,
     posBlueX: 0.3,
     posGreenX: 0,
     posRedX: -0.6,
