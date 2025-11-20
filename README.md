@@ -42,7 +42,18 @@ An advanced, physics-based educational tool that visualizes and simulates camera
 
    If $D_f \rightarrow \infty$, then $DoF \rightarrow \infty$.
 
-**Vars:** $H$ hyperfocal distance; $f$ focal length; $N$ f-number; $c$ circle of confusion limit; $S$ focus distance; $B_\infty$ bokeh diameter at infinity; $h$ sensor dimension (height); $FOV$ field of view; $D_n$ near focus limit; $D_f$ far focus limit; $DoF$ depth of field.
+**Vars:** 
+$H$ hyperfocal distance  
+$f$ focal length  
+$N$ f-number  
+$c$ circle of confusion limit  
+$S$ focus distance  
+$B_\infty$ bokeh diameter at infinity  
+$h$ sensor dimension (height)  
+$FOV$ field of view  
+$D_n$ near focus limit  
+$D_f$ far focus limit  
+$DoF$ depth of field
 
 ---
 
@@ -84,7 +95,18 @@ An advanced, physics-based educational tool that visualizes and simulates camera
 
    若 $D_f \rightarrow \infty$，则 $DoF \rightarrow \infty$
 
-**符号说明：** $H$ 超焦距；$f$ 焦距；$N$ 光圈值；$c$ 弥散圆限值；$S$ 对焦距离；$B_\infty$ 无穷远焦外直径；$h$ 传感器尺寸（高度）；$FOV$ 视场角；$D_n$ 景深近限；$D_f$ 景深远限；$DoF$ 景深。
+**符号说明：**
+$H$ 超焦距  
+$f$ 焦距  
+$N$ 光圈值  
+$c$ 弥散圆限值  
+$S$ 对焦距离  
+$B_\infty$ 无穷远焦外直径  
+$h$ 传感器尺寸（高度）  
+$FOV$ 视场角  
+$D_n$ 景深近限  
+$D_f$ 景深远限  
+$DoF$ 景深
 
 ---
 
