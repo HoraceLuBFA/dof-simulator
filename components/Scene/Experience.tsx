@@ -9,7 +9,7 @@ import clsx from 'clsx';
 
 import { World } from './World';
 import { useOpticalStore } from '../../store/useOpticalStore';
-import { getSensorDimensions, calculateBokehDiameterPx } from '../../utils/optics';
+import { getSensorDimensions, calculateBokehDiameterPx, calculateOptics } from '../../utils/optics';
 
 // Workaround for missing types in the THREE namespace
 const T = THREE as any;
@@ -116,7 +116,7 @@ const StudioControls: React.FC = () => {
  * - 使用物理 CoC 计算 bokehScale，自适应 worldFocusRange
  */
 const PostProcessingEffects: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mode }) => {
-  const { size, camera } = useThree();
+  const { size, camera, gl } = useThree();
   const {
     focalLength,
     aperture,
@@ -180,91 +180,65 @@ const PostProcessingEffects: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mo
     return [cameraX, cameraY, CAM_Z - focusDistance] as [number, number, number];
   }, [focusDistance, posBlue, posGreen, posRed, camPos, cameraX, cameraY]);
 
-  /**
-   * 2）根据对焦对象类型，收窄清晰带，让虚化更明显
-   */
+  // 2）物理 DoF：与 MathPanel 同步，驱动 worldFocusRange 与真实 CoC
+  const metrics = useMemo(
+    () => calculateOptics(focalLength, aperture, focusDistance, sensorType),
+    [focalLength, aperture, focusDistance, sensorType],
+  );
+
+  // 清晰带长度取真实景深；Df=∞ 则给一个大值，避免极小值
   const worldFocusRange = useMemo(() => {
-    // 强制收窄到 0.3 以制造明显的焦外
-    return 0.3;
-  }, []);
+    if (metrics.totalDepth === Infinity) return 50;
+    return Math.max(metrics.totalDepth, 0.05);
+  }, [metrics]);
 
   /**
-   * 3）基于物理 CoC 计算 bokehScale，并做收敛处理：
+   * 3）基于物理 CoC 计算 bokehScale：使用实际渲染分辨率和传感器参数
    */
   const bokehScale = useMemo(() => {
     const { width: sensorWidthMm } = getSensorDimensions(sensorType);
+    const viewportWidthPx = size.width * gl.getPixelRatio();
 
     const focalLengthMm = focalLength;
     const fNumber = aperture;
-    const viewportWidthPx = size.width;
 
     const targetVec = new T.Vector3(...targetVector);
     const focusDistanceMm = camPos.distanceTo(targetVec) * 1000;
 
-    const dBlueMm = camPos.distanceTo(posBlue) * 1000;
-    const dGreenMm = camPos.distanceTo(posGreen) * 1000;
-    const dRedMm = camPos.distanceTo(posRed) * 1000;
+    const cocPxAt = (distM: number) =>
+      calculateBokehDiameterPx(
+        distM * 1000,
+        { focalLengthMm, fNumber, focusDistanceMm, sensorWidthMm },
+        viewportWidthPx,
+      );
 
-    const cocBluePx = calculateBokehDiameterPx(
-      dBlueMm,
-      { focalLengthMm, fNumber, focusDistanceMm, sensorWidthMm },
-      viewportWidthPx,
-    );
-    const cocGreenPx = calculateBokehDiameterPx(
-      dGreenMm,
-      { focalLengthMm, fNumber, focusDistanceMm, sensorWidthMm },
-      viewportWidthPx,
-    );
-    const cocRedPx = calculateBokehDiameterPx(
-      dRedMm,
-      { focalLengthMm, fNumber, focusDistanceMm, sensorWidthMm },
-      viewportWidthPx,
-    );
-    const cocInfPx = calculateBokehDiameterPx(
-      Infinity,
-      { focalLengthMm, fNumber, focusDistanceMm, sensorWidthMm },
-      viewportWidthPx,
-    );
+    // 取：近限、远限/无穷远、以及场景中主要目标（蓝/绿/红）距离的 CoC，选择最大值驱动散景
+    const distancesM = [
+      metrics.nearLimit,
+      metrics.farLimit === Infinity ? 1000 : metrics.farLimit,
+      camPos.distanceTo(posBlue),
+      camPos.distanceTo(posGreen),
+      camPos.distanceTo(posRed),
+    ];
 
-    // 场景中可能出现的最大 CoC
-    let physicalCocPx = Math.max(cocBluePx, cocGreenPx, cocRedPx, cocInfPx);
+    const cocMax = distancesM.reduce((max, d) => Math.max(max, cocPxAt(d)), 0);
 
-    // ① 提高截断阈值，允许更大的模糊核心 (80px)
-    const HARD_CLAMP_COC_PX = 30;
-    physicalCocPx = Math.min(physicalCocPx, HARD_CLAMP_COC_PX);
-
-    // 增强模糊效果，物理CoC乘以系数
-    // physicalCocPx *= 2.0;
-
-    // ② 将物理 CoC 映射到 shader 的强度范围 (提高到 10.0)
-    const MAX_PHYSICAL_COC_PX = HARD_CLAMP_COC_PX;
-    const MAX_SHADER_INTENSITY = 10.0;
-
-    let normalizedIntensity =
-      (physicalCocPx / MAX_PHYSICAL_COC_PX) * MAX_SHADER_INTENSITY;
-
-    // ③ 远距离对焦时整体衰减
-    const focusDistanceM = focusDistanceMm / 1000;
-    const farFocusFactor = focusDistanceM > 10 ? 0.5 : 1.0;
-    normalizedIntensity *= farFocusFactor;
-
-    const finalScale = T.MathUtils.clamp(
-      normalizedIntensity,
-      0,
-      MAX_SHADER_INTENSITY,
-    );
-
+    // 适度放大，保留上限避免核过大
+    const finalScale = T.MathUtils.clamp(cocMax * 0.8, 0, 50);
     return finalScale;
   }, [
     aperture,
-    focalLength,
-    sensorType,
-    size.width,
-    targetVector,
     camPos,
+    focalLength,
+    gl,
+    metrics.farLimit,
+    metrics.nearLimit,
     posBlue,
     posGreen,
     posRed,
+    sensorType,
+    size.width,
+    targetVector,
   ]);
 
   return (
