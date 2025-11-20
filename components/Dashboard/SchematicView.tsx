@@ -48,20 +48,17 @@ export const SchematicView: React.FC = () => {
   const SVG_HEIGHT = dimensions.height;
   const SVG_WIDTH = dimensions.width;
   
-  // --- ISOTROPIC SCALING ---
-  // Define the real-world area we want to fit in the view
-  const WORLD_WIDTH_METERS = 24; // +/- 12m
-  const WORLD_DEPTH_METERS = 20; // 0 to 30m
-  const TOP_PADDING = 40;
+  // --- 自适应缩放：根据容器宽高比动态确定世界宽度 ---
+  // 固定可视深度范围（Z 方向），横向范围按容器宽高比推导，让网格刚好铺满左右边缘。
+  const WORLD_DEPTH_METERS = 20; // 0 to 20m 可视
+  const TOP_PADDING = 20;
   const BOTTOM_PADDING = 5;
+  const effectiveHeightPx = SVG_HEIGHT - TOP_PADDING - BOTTOM_PADDING;
+  // 按实际纵横比推导世界宽度：深度 * (宽/高)
+  const WORLD_WIDTH_METERS = WORLD_DEPTH_METERS * (SVG_WIDTH / Math.max(effectiveHeightPx, 1));
   
-  // Calculate scale (Pixels per Meter) for both dimensions
-  const scaleX = SVG_WIDTH / WORLD_WIDTH_METERS;
-  const scaleZ = (SVG_HEIGHT - TOP_PADDING - BOTTOM_PADDING) / WORLD_DEPTH_METERS;
-  
-  // Use the smaller scale to ensure the defined world area fits entirely without distortion
-  // But we prioritize width fill slightly for better usage of wide screens
-  const PPM = Math.min(scaleX, scaleZ); 
+  // 单一比例尺，保证 X/Z 同比例映射并填满容器
+  const PPM = effectiveHeightPx / WORLD_DEPTH_METERS;
 
   const CENTER_X = SVG_WIDTH / 2;
   const BOTTOM_Y = SVG_HEIGHT - BOTTOM_PADDING;
@@ -186,7 +183,7 @@ export const SchematicView: React.FC = () => {
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full min-h-[300px] lg:min-h-0 overflow-hidden relative flex flex-col flex-1 select-none p-4 pt-12"
+      className="w-full aspect-video min-h-[300px] lg:min-h-[320px] overflow-hidden relative flex flex-col select-none px-2 sm:px-4 pt-10 pb-4 lg:aspect-video"
     >
         <p className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-cyan-300 bg-slate-900/80 px-2 py-1 rounded border border-cyan-800/60 backdrop-blur pointer-events-none">
           Schematic (Drag Points)
