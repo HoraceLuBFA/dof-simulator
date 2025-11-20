@@ -2,16 +2,42 @@
 import { SensorType, SensorSpecs, OpticalMetrics } from '../types';
 
 export const SENSOR_DATA: Record<SensorType, SensorSpecs> = {
+  // Large Format / Full Frame
+  [SensorType.ArriAlexaLF]: { name: SensorType.ArriAlexaLF, coc: 0.030, cropFactor: 0.9 },
+  [SensorType.RedMonstro]: { name: SensorType.RedMonstro, coc: 0.031, cropFactor: 0.88 },
+  [SensorType.SonyVenice]: { name: SensorType.SonyVenice, coc: 0.029, cropFactor: 1.0 },
   [SensorType.FullFrame]: { name: SensorType.FullFrame, coc: 0.029, cropFactor: 1.0 },
+  
+  // Super 35 / APS-C
+  [SensorType.RedHelium]: { name: SensorType.RedHelium, coc: 0.023, cropFactor: 1.2 },
+  [SensorType.ArriAlexaSXT]: { name: SensorType.ArriAlexaSXT, coc: 0.021, cropFactor: 1.28 },
+  [SensorType.PhantomFlex4K]: { name: SensorType.PhantomFlex4K, coc: 0.021, cropFactor: 1.3 },
   [SensorType.APSC]: { name: SensorType.APSC, coc: 0.019, cropFactor: 1.5 },
+  
+  // M4/3
+  [SensorType.BMPCC4K]: { name: SensorType.BMPCC4K, coc: 0.014, cropFactor: 1.9 },
   [SensorType.M43]: { name: SensorType.M43, coc: 0.015, cropFactor: 2.0 },
 };
 
 export const getSensorDimensions = (type: SensorType) => {
   switch (type) {
-    case SensorType.FullFrame: return { width: 36, height: 24 };
+    // Large Format
+    case SensorType.ArriAlexaLF: return { width: 36.70, height: 25.54 };
+    case SensorType.RedMonstro: return { width: 40.96, height: 21.60 };
+    case SensorType.SonyVenice: return { width: 35.9, height: 24.0 };
+    case SensorType.FullFrame: return { width: 36.0, height: 24.0 };
+    
+    // Super 35
+    case SensorType.RedHelium: return { width: 29.90, height: 15.77 };
+    case SensorType.ArriAlexaSXT: return { width: 28.17, height: 18.13 };
+    case SensorType.PhantomFlex4K: return { width: 27.6, height: 15.5 };
     case SensorType.APSC: return { width: 23.5, height: 15.6 };
-    case SensorType.M43: return { width: 17.3, height: 13 };
+    
+    // Micro 4/3
+    case SensorType.BMPCC4K: return { width: 18.96, height: 10.0 };
+    case SensorType.M43: return { width: 17.3, height: 13.0 };
+    
+    default: return { width: 36, height: 24 };
   }
 };
 

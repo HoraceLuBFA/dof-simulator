@@ -2,9 +2,12 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame, ThreeEvent } from '@react-three/fiber';
 import { Grid, Text, Float, Line } from '@react-three/drei';
-import { Mesh, DoubleSide, PlaneGeometry, BackSide } from 'three';
+import * as THREE from 'three';
 import { useOpticalStore } from '../../store/useOpticalStore';
 import { calculateOptics, getSensorDimensions } from '../../utils/optics';
+
+// Workaround for missing types in the THREE namespace
+const T = THREE as any;
 
 interface WorldProps {
   mode: 'studio' | 'viewfinder';
@@ -15,13 +18,14 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
     focalLength, aperture, focusDistance, sensorType,
     setFocusDistance,
     distBlue, distGreen, distRed,
+    posBlueX, posGreenX, posRedX,
     cameraX, cameraY
   } = useOpticalStore();
   
-  // Refs for animation
-  const sphereRef = useRef<Mesh>(null);
-  const cubeRef = useRef<Mesh>(null);
-  const foreRef = useRef<Mesh>(null);
+  // Refs for animation - using any to avoid namespace errors
+  const sphereRef = useRef<any>(null);
+  const cubeRef = useRef<any>(null);
+  const foreRef = useRef<any>(null);
 
   const CAM_Z = 0.2;
 
@@ -173,28 +177,29 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
                         Math.PI / 4 // Rotate internal square by 45deg to align with axes
                     ]} 
                 />
-                <meshBasicMaterial color="#22d3ee" opacity={0.1} transparent side={DoubleSide} depthWrite={false} />
+                <meshBasicMaterial color="#22d3ee" opacity={0.1} transparent side={T.DoubleSide} depthWrite={false} />
             </mesh>
             
             {/* 3. Focus Plane (White Rect) */}
             <group position={[0, 0, fovVisuals.focus.z]}>
                 <mesh raycast={() => null}>
                     <planeGeometry args={[fovVisuals.focus.w, fovVisuals.focus.h]} />
-                    <meshBasicMaterial color="#ffffff" opacity={0.2} transparent side={DoubleSide} depthWrite={false} />
+                    <meshBasicMaterial color="#ffffff" opacity={0.2} transparent side={T.DoubleSide} depthWrite={false} />
                 </mesh>
                 <lineSegments>
-                    <edgesGeometry args={[new PlaneGeometry(fovVisuals.focus.w, fovVisuals.focus.h)]} />
+                    <edgesGeometry args={[new T.PlaneGeometry(fovVisuals.focus.w, fovVisuals.focus.h)]} />
                     <lineBasicMaterial color="#ffffff" opacity={0.6} transparent />
                 </lineSegments>
                 <Text 
                     position={[-fovVisuals.focus.w/2 - 0.2, 0, 0]} 
-                    fontSize={Math.max(0.2, fovVisuals.focus.w * 0.05)} 
+                    /*fontSize={Math.max(0.2, fovVisuals.focus.w * 0.05)} */
+                    fontSize={0.25}
                     color="white" 
                     anchorX="right" 
                     anchorY="middle"
                     fillOpacity={0.9}
                 >
-                    FOCUS
+                    FOCUS PLANE
                 </Text>
             </group>
 
@@ -202,16 +207,16 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
       )}
 
       {/* --- Subject 1: Foreground (Blue) --- */}
-      <group position={[0.3, 1.0, -distBlue]}>
+      <group position={[posBlueX, 1.0, -distBlue]}>
         <Float speed={2} rotationIntensity={0.2} floatIntensity={0.2}>
           <mesh ref={foreRef} castShadow receiveShadow onClick={focusOnObject('blue')}>
-            <icosahedronGeometry args={[0.2, 0]} />
+            <icosahedronGeometry args={[0.3, 0]} />
             <meshStandardMaterial color="#3b82f6" roughness={0.2} metalness={0.8} />
           </mesh>
         </Float>
         <Text 
           position={[0, 0.4, 0]} 
-          fontSize={0.15} 
+          fontSize={0.25} 
           color="white"
           anchorX="center" 
           anchorY="middle"
@@ -222,10 +227,10 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
       </group>
 
       {/* --- Subject 2: Midground Target (Green) --- */}
-      <group position={[0, 1.0, -distGreen]}>
+      <group position={[posGreenX, 1.0, -distGreen]}>
         <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.1}>
             <mesh ref={sphereRef} castShadow receiveShadow onClick={focusOnObject('green')}>
-              <sphereGeometry args={[0.4, 64, 64]} />
+              <sphereGeometry args={[0.3, 64, 64]} />
               <meshStandardMaterial color="#10b981" roughness={0.1} metalness={0.1} />
             </mesh>
         </Float>
@@ -237,21 +242,21 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
           anchorY="middle"
           visible={mode === 'studio'}
         >
-          Target: {distGreen.toFixed(1)}m
+          {distGreen.toFixed(1)}m
         </Text>
       </group>
 
       {/* --- Subject 3: Background (Red) --- */}
-      <group position={[-1.5, 1.0, -distRed]}>
+      <group position={[posRedX, 1.0, -distRed]}>
         <Float speed={1} rotationIntensity={0.05} floatIntensity={0.1}>
             <mesh ref={cubeRef} castShadow receiveShadow onClick={focusOnObject('red')}>
-              <boxGeometry args={[1.2, 1.2, 1.2]} />
+              <boxGeometry args={[0.3, 0.3, 0.3]} />
               <meshStandardMaterial color="#ef4444" roughness={0.5} />
             </mesh>
         </Float>
         <Text 
           position={[0, 1.0, 0]} 
-          fontSize={0.5} 
+          fontSize={0.25} 
           color="white"
           anchorX="center" 
           anchorY="middle"
@@ -285,8 +290,8 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
               <cylinderGeometry args={[0.15, 0.2, 0.4]} />
               <meshStandardMaterial color="#334155" />
            </mesh>
-           <Text position={[0, 0.5, 0]} fontSize={0.15} color="white">
-            Sensor Plane ({cameraX}m, {cameraY}m)
+           <Text position={[0, 0.5, 0]} fontSize={0.25} color="white">
+            Sensor Plane ( X = {cameraX}m, Y = {cameraY}m)
            </Text>
         </group>
       )}

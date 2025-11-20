@@ -32,14 +32,14 @@ function App() {
       */}
       <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 border-t border-slate-800 bg-slate-900">
         
-        {/* Controls (Left) */}
-        <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 p-4 min-h-[300px]">
-          <ControlPanel />
-        </div>
-
-        {/* Visualizer (Center) */}
+        {/* Visualizer (Left) - Swapped Position */}
         <div className="lg:col-span-6 bg-slate-950 p-4 relative border-b lg:border-b-0 lg:border-r border-slate-800 flex items-center justify-center min-h-[350px]">
           <SchematicView />
+        </div>
+
+        {/* Controls (Center) - Swapped Position */}
+        <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 p-4 min-h-[300px]">
+          <ControlPanel />
         </div>
 
         {/* Math (Right) */}

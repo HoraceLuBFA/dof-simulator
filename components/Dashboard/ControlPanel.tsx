@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { useOpticalStore } from '../../store/useOpticalStore';
 import { Slider } from '../UI/Slider';
 import { SensorType } from '../../types';
+import { getSensorDimensions } from '../../utils/optics';
 
 export const ControlPanel: React.FC = () => {
   const { 
@@ -40,9 +42,14 @@ export const ControlPanel: React.FC = () => {
             onChange={(e) => setSensorType(e.target.value as SensorType)}
             className="w-full bg-slate-800 border border-slate-600 text-white text-sm rounded p-2 focus:ring-2 focus:ring-cyan-500 outline-none"
         >
-            {Object.values(SensorType).map((t) => (
-                <option key={t} value={t}>{t}</option>
-            ))}
+            {Object.values(SensorType).map((t) => {
+                const dims = getSensorDimensions(t);
+                return (
+                    <option key={t} value={t}>
+                        {t} ({dims.width}×{dims.height}mm)
+                    </option>
+                );
+            })}
         </select>
       </div>
 
@@ -53,7 +60,7 @@ export const ControlPanel: React.FC = () => {
           min={18}
           max={200}
           step={1}
-          unit="mm"
+          unit=" mm"
           onChange={setFocalLength}
         />
         
@@ -73,13 +80,37 @@ export const ControlPanel: React.FC = () => {
           min={0.5}
           max={30}
           step={0.1}
-          unit="m"
+          unit=" m"
           onChange={setFocusDistance}
         />
       </div>
 
-      <div className="mt-auto p-3 bg-blue-900/20 border border-blue-900/50 rounded text-xs text-blue-200">
-        <span className="font-bold">Tip:</span> Lower aperture (f/1.4) creates shallower depth of field. Higher focal lengths compress the background blur.
+      {/* Comprehensive Optical Cheat Sheet */}
+      <div className="mt-auto p-3 bg-slate-800/60 border border-slate-700 rounded text-xs space-y-2">
+        <div className="text-cyan-400 font-bold border-b border-slate-700 pb-1 mb-1">
+          How to maximize Bokeh?
+        </div>
+        <ul className="space-y-1.5 text-slate-300">
+          <li className="flex justify-between">
+            <span>1. Aperture (<i>f</i>)</span>
+            <span className="text-emerald-400 font-mono">Lower (e.g. 1.4)</span>
+          </li>
+          <li className="flex justify-between">
+            <span>2. Focal Length</span>
+            <span className="text-emerald-400 font-mono">Higher (Zoom In)</span>
+          </li>
+          <li className="flex justify-between">
+            <span>3. Subject Dist.</span>
+            <span className="text-emerald-400 font-mono">Closer</span>
+          </li>
+          <li className="flex justify-between">
+            <span>4. Background</span>
+            <span className="text-emerald-400 font-mono">Farther away</span>
+          </li>
+        </ul>
+        <div className="pt-2 text-[10px] text-slate-500 leading-tight border-t border-slate-700 mt-2">
+          *Large sensors (Full Frame, Alexa LF) also help achieve shallower depth of field compared to crop sensors at equivalent FOVs.
+        </div>
       </div>
     </div>
   );
