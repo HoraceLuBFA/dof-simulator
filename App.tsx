@@ -35,22 +35,22 @@ function App() {
             Stacks vertically on mobile, Grid on desktop.
             Removed fixed height constraint to allow scaling.
         */}
-        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 border-t border-slate-800 bg-slate-900">
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 lg:items-start border-t border-slate-800 bg-slate-900">
           
           {/* Visualizer (Left) - Swapped Position 
               Added aspect ratio to force height scaling on wide screens.
           */}
-          <div className="lg:col-span-6 bg-slate-900/50 relative border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col lg:aspect-[2.2/1]">
+          <div className="lg:col-span-6 bg-slate-900/50 relative border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col lg:aspect-[2.2/1] self-start lg:h-auto">
             <SchematicView />
           </div>
 
           {/* Controls (Center) - Swapped Position */}
-          <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 flex flex-col h-full min-h-[400px] lg:min-h-0">
+          <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 flex flex-col h-full min-h-[400px] lg:min-h-0 lg:max-h-[calc(100vw/2.2)] lg:overflow-y-auto">
             <ControlPanel />
           </div>
 
           {/* Math (Right) */}
-          <div className="lg:col-span-3 bg-slate-900/50 flex flex-col h-full min-h-[400px] lg:min-h-0">
+          <div className="lg:col-span-3 bg-slate-900/50 flex flex-col h-full min-h-[400px] lg:min-h-0 lg:max-h-[calc(100vw/2.2)] lg:overflow-y-auto">
             <MathPanel />
           </div>
 
