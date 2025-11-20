@@ -51,9 +51,9 @@ export const SchematicView: React.FC = () => {
   // --- ISOTROPIC SCALING ---
   // Define the real-world area we want to fit in the view
   const WORLD_WIDTH_METERS = 24; // +/- 12m
-  const WORLD_DEPTH_METERS = 30; // 0 to 30m
+  const WORLD_DEPTH_METERS = 20; // 0 to 30m
   const TOP_PADDING = 40;
-  const BOTTOM_PADDING = 20;
+  const BOTTOM_PADDING = 5;
   
   // Calculate scale (Pixels per Meter) for both dimensions
   const scaleX = SVG_WIDTH / WORLD_WIDTH_METERS;
