@@ -24,11 +24,17 @@ An advanced, physics-based educational tool that visualizes and simulates camera
 - Tailwind CSS + clsx
 
 ## 📐 Optical Formulas
-1. **Hyperfocal Distance:** $$H = \frac{f^2}{N \times c} + f$$
+1. **Hyperfocal Distance:**
 
-2. **Bokeh Diameter at Infinity:** $$B_{\infty} = \frac{f^2}{N(S - f)}$$
+   $$H = \frac{f^2}{N \times c} + f$$
 
-3. **Field of View:** $$FOV = 2 \times \arctan\left(\frac{h}{2f}\right)$$
+2. **Bokeh Diameter at Infinity:**
+
+   $$B_{\infty} = \frac{f^2}{N(S - f)}$$
+
+3. **Field of View:**
+
+   $$FOV = 2 \times \arctan\left(\frac{h}{2f}\right)$$
 
 4. **Depth of Field:**
 
@@ -62,31 +68,21 @@ An advanced, physics-based educational tool that visualizes and simulates camera
 ## 📐 光学公式
 1. **超焦距：**
 
-   $$
-   H = \frac{f^2}{N \times c} + f
-   $$
+   $$H = \frac{f^2}{N \times c} + f$$
 
 2. **无穷远焦外直径：**
 
-   $$
-   B_{\infty} = \frac{f^2}{N(S - f)}
-   $$
+   $$B_{\infty} = \frac{f^2}{N(S - f)}$$
 
 3. **视场角：**
 
-   $$
-   FOV = 2 \times \arctan\left(\frac{h}{2f}\right)
-   $$
+   $$FOV = 2 \times \arctan\left(\frac{h}{2f}\right)$$
 
 4. **景深：**
 
-   $$
-   DoF = D_f - D_n,\quad
-   D_n = \frac{H \cdot S}{H + S - f},\quad
-   D_f = \frac{H \cdot S}{H - S + f}
-   $$
+   $$DoF = D_f - D_n,\quad D_n = \frac{H \cdot S}{H + S - f},\quad D_f = \frac{H \cdot S}{H - S + f}$$
 
-   若 $D_f \rightarrow \infty$，则 $DoF \rightarrow \infty$。
+   若 $D_f \rightarrow \infty$，则 $DoF \rightarrow \infty$
 
 **符号说明：** $H$ 超焦距；$f$ 焦距；$N$ 光圈值；$c$ 弥散圆限值；$S$ 对焦距离；$B_\infty$ 无穷远焦外直径；$h$ 传感器尺寸（高度）；$FOV$ 视场角；$D_n$ 景深近限；$D_f$ 景深远限；$DoF$ 景深。
 
