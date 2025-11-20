@@ -1,5 +1,5 @@
 
-import React, { Suspense, useEffect, useMemo, useRef } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -25,7 +25,7 @@ const CameraController: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mode })
 
   useEffect(() => {
     // Fix: Ensure we are working with a PerspectiveCamera to access .fov
-    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    if (!(camera instanceof T.PerspectiveCamera)) return;
 
     if (mode === 'viewfinder') {
       const { height: sensorHeight } = getSensorDimensions(sensorType);
@@ -285,10 +285,36 @@ interface ExperienceProps {
 }
 
 export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
-  const { moveCamera, resetCamera, setStudioView, studioView } = useOpticalStore();
+  const {
+    moveCamera,
+    resetCamera,
+    setStudioView,
+    studioView,
+    setFocusDistance,
+  } = useOpticalStore();
+  const [focusBoxPos, setFocusBoxPos] = useState({ x: 50, y: 50 });
+
+  const handleViewfinderClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+      // Clamp to keep box fully visible near edges
+      const clampedX = Math.min(98, Math.max(2, x));
+      const clampedY = Math.min(98, Math.max(2, y));
+
+      setFocusBoxPos({ x: clampedX, y: clampedY });
+    },
+    [],
+  );
 
   return (
-    <div className="w-full h-full relative bg-black group overflow-hidden">
+    <div
+      className="w-full h-full relative bg-black group overflow-hidden"
+      onClick={mode === 'viewfinder' ? handleViewfinderClick : undefined}
+    >
       {/* 左上角模式标签 */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
         <div className="flex flex-col">
@@ -329,8 +355,18 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
         <>
           <div className="absolute inset-0 pointer-events-none z-10 border-[20px] border-black/20">
             {/* 中央对焦框与中心点 */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-white/30 opacity-50" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white/50 rounded-full" />
+            <div
+              className="absolute w-10 h-10 border border-white/70 rounded-sm shadow-[0_0_0_1px_rgba(255,255,255,0.2)]"
+              style={{
+                left: `${focusBoxPos.x}%`,
+                top: `${focusBoxPos.y}%`,
+                transform: 'translate(-50%, -50%)',
+                transition: 'left 150ms ease, top 150ms ease',
+              }}
+            >
+              <div className="absolute inset-[45%] rounded-full bg-white/60" />
+              <div className="absolute inset-0 border border-white/10 animate-pulse" />
+            </div>
 
             {/* REC 指示灯 */}
             <div className="absolute top-8 right-8 flex items-center gap-2">
@@ -356,7 +392,10 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
           {/* 光轴平移控制 */}
           <div className="absolute bottom-8 right-8 z-30 flex flex-col items-center gap-1">
             <button
-              onClick={() => moveCamera(0, 0.1)}
+              onClick={(e) => {
+                e.stopPropagation();
+                moveCamera(0, 0.1);
+              }}
               className="w-8 h-8 bg-slate-800/80 hover:bg-cyan-600 text-white rounded flex items-center justify-center border border-white/10 active:scale-95 transition-all"
               title="Move Up"
             >
@@ -364,21 +403,30 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
             </button>
             <div className="flex gap-1">
               <button
-                onClick={() => moveCamera(-0.1, 0)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  moveCamera(-0.1, 0);
+                }}
                 className="w-8 h-8 bg-slate-800/80 hover:bg-cyan-600 text-white rounded flex items-center justify-center border border-white/10 active:scale-95 transition-all"
                 title="Move Left"
               >
                 ◀
               </button>
               <button
-                onClick={resetCamera}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetCamera();
+                }}
                 className="w-8 h-8 bg-slate-800/80 hover:bg-rose-600 text-white rounded flex items-center justify-center border border-white/10 active:scale-95 transition-all font-bold"
                 title="Reset Position"
               >
                 ●
               </button>
               <button
-                onClick={() => moveCamera(0.1, 0)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  moveCamera(0.1, 0);
+                }}
                 className="w-8 h-8 bg-slate-800/80 hover:bg-cyan-600 text-white rounded flex items-center justify-center border border-white/10 active:scale-95 transition-all"
                 title="Move Right"
               >
@@ -386,7 +434,10 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
               </button>
             </div>
             <button
-              onClick={() => moveCamera(0, -0.1)}
+              onClick={(e) => {
+                e.stopPropagation();
+                moveCamera(0, -0.1);
+              }}
               className="w-8 h-8 bg-slate-800/80 hover:bg-cyan-600 text-white rounded flex items-center justify-center border border-white/10 active:scale-95 transition-all"
               title="Move Down"
             >
@@ -408,6 +459,9 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
           preserveDrawingBuffer: true,
           toneMapping: T.ACESFilmicToneMapping,
         }}
+        onPointerMissed={
+          mode === 'viewfinder' ? () => setFocusDistance(30) : undefined
+        }
       >
         <CameraController mode={mode} />
         <ambientLight intensity={0.2} />

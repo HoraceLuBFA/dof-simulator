@@ -47,54 +47,41 @@ export const SchematicView: React.FC = () => {
   // Visualization Config
   const SVG_HEIGHT = dimensions.height;
   const SVG_WIDTH = dimensions.width;
-  const MAX_DISTANCE_DISPLAY = 20;
-  const TOP_PADDING = 20; // Pixel padding at the top of the graph
-
-  // --- Z AXIS MAPPING ---
-  // Helper to map Real World Meters (Z) to SVG Y Pixels
-  // 0m = SVG_HEIGHT (Bottom)
-  // MAX = TOP_PADDING (Top)
-  const DRAWABLE_HEIGHT = Math.max(1, SVG_HEIGHT - TOP_PADDING);
   
-  const mapZ = (meters: number) => {
-    const ratio = meters / MAX_DISTANCE_DISPLAY;
-    return SVG_HEIGHT - (ratio * DRAWABLE_HEIGHT);
-  };
+  // --- ISOTROPIC SCALING ---
+  // Define the real-world area we want to fit in the view
+  const WORLD_WIDTH_METERS = 24; // +/- 12m
+  const WORLD_DEPTH_METERS = 30; // 0 to 30m
+  const TOP_PADDING = 40;
+  const BOTTOM_PADDING = 20;
+  
+  // Calculate scale (Pixels per Meter) for both dimensions
+  const scaleX = SVG_WIDTH / WORLD_WIDTH_METERS;
+  const scaleZ = (SVG_HEIGHT - TOP_PADDING - BOTTOM_PADDING) / WORLD_DEPTH_METERS;
+  
+  // Use the smaller scale to ensure the defined world area fits entirely without distortion
+  // But we prioritize width fill slightly for better usage of wide screens
+  const PPM = Math.min(scaleX, scaleZ); 
 
-  // Helper to map Mouse Y to Meters
-  const mapYtoZ = (y: number) => {
-    // y = SVG_HEIGHT - ratio * DRAWABLE_HEIGHT
-    // ratio * DRAWABLE_HEIGHT = SVG_HEIGHT - y
-    const ratio = (SVG_HEIGHT - y) / DRAWABLE_HEIGHT;
-    return ratio * MAX_DISTANCE_DISPLAY;
-  };
-
-  // --- X AXIS MAPPING ---
-  // Consistent Scale: How many pixels represent 1 meter of width?
-  // Let's fix a scale relative to width. e.g. Width represents ~20m across
-  const X_SCALE = SVG_WIDTH / 20; // Pixels per meter
   const CENTER_X = SVG_WIDTH / 2;
+  const BOTTOM_Y = SVG_HEIGHT - BOTTOM_PADDING;
 
-  const mapX = (metersX: number) => {
-      return CENTER_X + (metersX * X_SCALE);
-  };
+  // Mapping Functions
+  const mapZ = (meters: number) => BOTTOM_Y - (meters * PPM);
+  const mapX = (metersX: number) => CENTER_X + (metersX * PPM);
 
-  const mapPixelsToX = (pixelsX: number) => {
-      return (pixelsX - CENTER_X) / X_SCALE;
-  };
+  // Inverse Mapping (Pixels -> Meters)
+  const mapPixelsToZ = (py: number) => (BOTTOM_Y - py) / PPM;
+  const mapPixelsToX = (px: number) => (px - CENTER_X) / PPM;
+
 
   // Frustum Calculation for Visualization
-  // Calculate Frustum Half-Width at specific Z distance (in SVG pixels)
   const getFrustumHalfWidthPx = (zMeters: number) => {
     const { width } = getSensorDimensions(sensorType);
     const fovRad = Math.atan((width / 2) / focalLength); 
-
-    // Real world width at Z = 2 * Z * tan(theta) -> Half Width = Z * tan(theta)
     const realHalfWidth = zMeters * Math.tan(fovRad);
-    
-    return realHalfWidth * X_SCALE;
+    return realHalfWidth * PPM;
   };
-
 
   const getMousePos = (e: React.PointerEvent) => {
     if (!svgRef.current) return { z: 0, x: 0 };
@@ -108,7 +95,7 @@ export const SchematicView: React.FC = () => {
     const svgP = pt.matrixTransform(ctm.inverse());
     
     return {
-        z: mapYtoZ(svgP.y),
+        z: mapPixelsToZ(svgP.y),
         x: mapPixelsToX(svgP.x)
     };
   };
@@ -135,11 +122,10 @@ export const SchematicView: React.FC = () => {
     // Calculate new Z
     let newZ = mouse.z + dragOffset.current.z;
     if (newZ < 0.5) newZ = 0.5;
-    if (newZ > MAX_DISTANCE_DISPLAY) newZ = MAX_DISTANCE_DISPLAY;
+    if (newZ > WORLD_DEPTH_METERS) newZ = WORLD_DEPTH_METERS;
 
     // Calculate new X
     let newX = mouse.x + dragOffset.current.x;
-    // Clamp X slightly to stay within "reasonable" world bounds if needed, or just SVG bounds
     const MAX_X_METERS = 10;
     if (newX < -MAX_X_METERS) newX = -MAX_X_METERS;
     if (newX > MAX_X_METERS) newX = MAX_X_METERS;
@@ -156,15 +142,15 @@ export const SchematicView: React.FC = () => {
     }
   };
 
-  // Camera Position in SVG (Mapped from World Camera X)
-  const cameraSvgY = SVG_HEIGHT;
+  // Camera Position
+  const cameraSvgY = mapZ(0);
   const cameraSvgX = mapX(cameraX);
   
   const focusY = mapZ(focusDistance);
   const nearY = mapZ(metrics.nearLimit);
   
-  // Frustum Points
-  const farLimitMeters = 35; // Draw frustum slightly past max
+  // Frustum Drawing
+  const farLimitMeters = WORLD_DEPTH_METERS + 5; 
   const frustumY = mapZ(farLimitMeters);
   const frustumW = getFrustumHalfWidthPx(farLimitMeters);
   
@@ -175,10 +161,10 @@ export const SchematicView: React.FC = () => {
     L ${cameraSvgX + frustumW} ${frustumY}
   `;
 
-  // DoF Zone (Trapezoid clipped to Frustum)
+  // DoF Zone
   const wNear = getFrustumHalfWidthPx(metrics.nearLimit);
   const wFar = getFrustumHalfWidthPx(Math.min(metrics.farLimit, farLimitMeters));
-  const yFarReal = metrics.farLimit === Infinity ? 0 : mapZ(metrics.farLimit);
+  const yFarReal = metrics.farLimit === Infinity ? mapZ(farLimitMeters) : mapZ(metrics.farLimit);
 
   const dofPath = `
     M ${cameraSvgX - wNear} ${nearY}
@@ -197,9 +183,11 @@ export const SchematicView: React.FC = () => {
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full min-h-[300px] bg-slate-900 rounded-xl border border-slate-800 overflow-hidden relative flex flex-col items-center justify-center select-none"
+      className="w-full h-full min-h-[300px] lg:min-h-0 overflow-hidden relative flex flex-col flex-1 select-none p-4 pt-12"
     >
-        <p className="absolute top-2 left-3 text-xs text-slate-500 font-mono uppercase pointer-events-none">Schematic (Drag Points)</p>
+        <p className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-cyan-300 bg-slate-900/80 px-2 py-1 rounded border border-cyan-800/60 backdrop-blur pointer-events-none">
+          Schematic (Drag Points)
+        </p>
       
       <svg 
         ref={svgRef}
@@ -212,12 +200,11 @@ export const SchematicView: React.FC = () => {
       >
         
         {/* Grid Lines */}
-        {Array.from({ length: 7 }).map((_, i) => {
-          // 0, 5, 10, 15, 20, 25, 30
+        {Array.from({ length: 8 }).map((_, i) => {
+          // 0, 5, 10, ...
           const z = i * 5;
           const y = mapZ(z);
-          // Don't draw if it pushes off top too much
-          if (y < 10) return null;
+          if (y < 10 || y > SVG_HEIGHT) return null;
           
           return (
             <g key={i}>
@@ -227,32 +214,29 @@ export const SchematicView: React.FC = () => {
           );
         })}
         
-        {/* Center Axis Line (World Center) */}
+        {/* Center Axis Line */}
         <line x1={CENTER_X} y1={0} x2={CENTER_X} y2={SVG_HEIGHT} stroke="#1e293b" strokeWidth="1" />
 
-        {/* Camera Frustum Lines */}
+        {/* Camera Frustum */}
         <path d={frustumPath} stroke="#334155" strokeWidth="1" fill="none" opacity="0.5" />
         
-        {/* Angle Arc at Camera */}
+        {/* Angle Arc */}
         <path 
             d={`M ${cameraSvgX - 20} ${cameraSvgY - 60} Q ${cameraSvgX} ${cameraSvgY - 50} ${cameraSvgX + 20} ${cameraSvgY - 60}`} 
             stroke="#334155" strokeWidth="1" fill="none" opacity="0.2" 
         />
 
-        {/* Depth of Field Zone (Trapezoid) */}
+        {/* DoF Zone */}
         <path 
           d={dofPath} 
           fill="url(#dofGradient)"
           opacity="0.4"
         />
         
-        {/* Focus Plane Line (Full Width) */}
+        {/* Focus Plane */}
         <line x1={0} y1={focusY} x2={SVG_WIDTH} y2={focusY} stroke="#ffffff" strokeWidth="2" strokeDasharray="4 2" opacity="0.5" />
-        
-        {/* TEXT */}
         <text x="10" y={focusY - 5} fill="#ffffff" fontSize="10" className="font-mono">FOCUS PLANE</text>
 
-        {/* Gradient Def */}
         <defs>
           <linearGradient id="dofGradient" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.2" />
@@ -261,7 +245,7 @@ export const SchematicView: React.FC = () => {
           </linearGradient>
         </defs>
 
-        {/* Physical Objects (Draggable) */}
+        {/* Draggable Objects */}
         {objects.map((obj) => {
             const y = mapZ(obj.z);
             const x = mapX(obj.x);
@@ -271,9 +255,7 @@ export const SchematicView: React.FC = () => {
                   className="cursor-move"
                   onPointerDown={(e) => handlePointerDown(e, obj.id, obj.z, obj.x)}
                 >
-                    {/* Invisible larger hit area */}
                     <circle cx={x} cy={y} r="20" fill="transparent" />
-                    {/* Visible dot */}
                     <circle 
                       cx={x} 
                       cy={y} 
@@ -289,7 +271,7 @@ export const SchematicView: React.FC = () => {
             )
         })}
 
-        {/* Camera Icon (At cameraSvgX) */}
+        {/* Camera Icon */}
         <path d={`M ${cameraSvgX - 10} ${cameraSvgY} L ${cameraSvgX + 10} ${cameraSvgY} L ${cameraSvgX} ${cameraSvgY - 10} Z`} fill="#cbd5e1" />
       </svg>
 

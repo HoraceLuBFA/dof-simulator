@@ -15,14 +15,13 @@ export const ControlPanel: React.FC = () => {
   } = useOpticalStore();
 
   return (
-    <div className="p-6 h-full flex flex-col gap-6 overflow-y-auto">
-      <div>
-        <h2 className="text-xl font-bold text-white mb-1">Parameters</h2>
-        <p className="text-xs text-slate-400">Adjust optical variables</p>
-      </div>
+    <div className="relative p-6 pt-12 h-full flex flex-col gap-6 overflow-y-auto">
+      <span className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-amber-300 bg-slate-900/80 px-2 py-1 rounded border border-amber-800/60 backdrop-blur">
+        Optical Variables
+      </span>
 
       {/* Quick Presets */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 mt-2">
         {(['portrait', 'landscape', 'macro'] as const).map((p) => (
           <button
             key={p}
@@ -85,33 +84,6 @@ export const ControlPanel: React.FC = () => {
         />
       </div>
 
-      {/* Comprehensive Optical Cheat Sheet */}
-      <div className="mt-auto p-3 bg-slate-800/60 border border-slate-700 rounded text-xs space-y-2">
-        <div className="text-cyan-400 font-bold border-b border-slate-700 pb-1 mb-1">
-          How to maximize Bokeh?
-        </div>
-        <ul className="space-y-1.5 text-slate-300">
-          <li className="flex justify-between">
-            <span>1. Aperture (<i>f</i>)</span>
-            <span className="text-emerald-400 font-mono">Lower (e.g. 1.4)</span>
-          </li>
-          <li className="flex justify-between">
-            <span>2. Focal Length</span>
-            <span className="text-emerald-400 font-mono">Higher (Zoom In)</span>
-          </li>
-          <li className="flex justify-between">
-            <span>3. Subject Dist.</span>
-            <span className="text-emerald-400 font-mono">Closer</span>
-          </li>
-          <li className="flex justify-between">
-            <span>4. Background</span>
-            <span className="text-emerald-400 font-mono">Farther away</span>
-          </li>
-        </ul>
-        <div className="pt-2 text-[10px] text-slate-500 leading-tight border-t border-slate-700 mt-2">
-          *Large sensors (Full Frame, Alexa LF) also help achieve shallower depth of field compared to crop sensors at equivalent FOVs.
-        </div>
-      </div>
     </div>
   );
 };
