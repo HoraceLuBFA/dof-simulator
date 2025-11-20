@@ -1,82 +1,58 @@
-# Optical Lab: Interactive Depth of Field Simulator
-# 光学实验室：交互式景深模拟器
+# 🧭 Interactive Depth of Field Simulator
 
-An advanced, physics-based educational tool designed to visualize and simulate camera optics, specifically focusing on **Depth of Field (DoF)** and **Bokeh**. Built with **React**, **Three.js (@react-three/fiber)**, and **Zustand**.
-
-这是一个基于物理光学公式的高级教育工具，旨在可视化和模拟摄影光学原理，重点关注**景深 (DoF)** 和 **焦外成像 (Bokeh)**。项目基于 **React**、**Three.js (@react-three/fiber)** 和 **Zustand** 构建。
+[English](#english) | [中文](#中文)
 
 ---
 
-## 🌟 Key Features (核心功能)
+# English
 
-### 1. Dual-View Visualization (双视窗可视化)
-*   **Studio View (Left/Top):** A "God mode" looking at the camera setup from the outside. Visualizes the **Camera Frustum**, **Focus Plane**, and **Depth of Field Zone** (Near/Far limits) as semi-transparent 3D volumes. Supports Top/Side/Front orthographic presets.
-*   **Viewfinder View (Right/Bottom):** A physically accurate simulation of the actual photo. Features real-time **Bokeh** rendering based on the Circle of Confusion (CoC) formula ($B = \frac{f^2}{N(S-f)}$), lens breathing, and field of view calculations.
-*   **Studio 视图 (左/上):** “上帝视角”，从外部观察相机布景。以半透明 3D 体积形式可视化**相机视锥**、**焦平面**以及**景深范围**（近限/远限）。支持顶/侧/正视图切换。
-*   **取景器视图 (右/下):** 物理精确的实拍模拟。基于弥散圆 (CoC) 公式 ($B = \frac{f^2}{N(S-f)}$) 实时渲染**焦外虚化**，支持呼吸效应和视场角计算。
+An advanced, physics-based educational tool that visualizes and simulates camera optics, with a focus on **Depth of Field (DoF)** and **Bokeh**. Built with **React**, **Three.js (@react-three/fiber)**, and **Zustand**.
 
-### 2. Interactive Physics (交互式物理引擎)
-*   **Parameters:** Adjust **Focal Length** (18-200mm), **Aperture** (f/1.2-f/22), **Focus Distance**, and **Sensor Size** (Full Frame, APS-C, M4/3).
-*   **Smart Focus:** Click on objects in the Viewfinder to instantly snap focus to their exact physical distance.
-*   **Draggable Schematic:** A 2D Top-down SVG dashboard where you can drag objects (Red, Green, Blue) to change their physical distance from the camera.
-*   **参数调节:** 调节 **焦距**、**光圈**、**对焦距离** 以及 **传感器画幅**。
-*   **智能对焦:** 点击取景器中的物体，焦平面会自动吸附到该物体的精确物理距离。
-*   **可拖拽原理图:** 2D 顶视 SVG 面板，支持拖拽场景中的物体（红、绿、蓝）来改变它们与相机的距离。
+## 🌟 Key Features (per panel)
+- **Studio View (3D, left/top):** “God mode” showing camera frustum, focus plane, and DoF volume as semi-transparent shapes; Top/Side/Front presets for fast alignment.
+- **Viewfinder (3D, right/bottom):** Physically accurate shot preview with real-time bokeh (CoC-driven), breathing, and FOV; movable focus box follows your click; clicking empty space auto-sets focus to max distance for an “infinity” look.
+- **Schematic View (2D SVG):** Top-down draggable Red/Green/Blue markers to change object distances/positions; stays in sync with 3D scenes and focus logic.
+- **Control Panel:** Sliders for focal length (18–200mm), aperture (f/1.2–f/22), focus distance, sensor format (Full Frame / APS-C / M4/3), plus presets (portrait/landscape/macro) and camera shift buttons in viewfinder mode.
+- **Math Panel:** Live readouts for hyperfocal distance, DoF near/far limits, total DoF, front/back split, CoC diameter, and horizontal FOV, all recomputed from current parameters.
 
-### 3. Real-Time Math (实时数学计算)
-*   Displays live calculations for **Hyperfocal Distance**, **Near Limit**, **Far Limit**, and **Total Depth**.
-*   Visualizes the Circle of Confusion (CoC) diameter.
-*   显示 **超焦距**、**景深近限**、**景深远限** 和 **总景深** 的实时计算结果。
-*   可视化弥散圆 (CoC) 直径。
+## 🛠 Tech Stack
+- React 18 + Vite
+- Three.js + @react-three/fiber
+- @react-three/drei (OrbitControls, Text, Grid, etc.)
+- @react-three/postprocessing (DepthOfField, Vignette)
+- Zustand (central physics/state store)
+- Tailwind CSS + clsx
 
----
-
-## 🎮 Controls (操作说明)
-
-### Viewfinder (取景器)
-*   **Click Object:** Focus on that specific object.
-*   **Arrow Buttons (Overlay):** Truck (Move Left/Right) and Pedestal (Move Up/Down) the camera position to shift the optical axis.
-*   **点击物体:** 对焦到该物体。
-*   **方向按钮 (浮层):** 控制相机平移 (上下左右)，改变光轴位置。
-
-### Schematic View (原理图)
-*   **Drag Dots:** Click and drag the Blue, Green, or Red dots to move the objects in the 3D world.
-*   **拖拽圆点:** 点击并拖动蓝、绿、红圆点，移动 3D 世界中对应的物体。
-
-### Studio View (摄影棚视图)
-*   **Orbit:** Left click + Drag to rotate.
-*   **Pan:** Right click + Drag to move.
-*   **Presets:** Use "Top", "Side", "Front" buttons for quick alignment.
-*   **旋转:** 左键拖拽。
-*   **平移:** 右键拖拽。
-*   **预设:** 使用 "Top" (顶), "Side" (侧), "Front" (正) 按钮快速对齐视角。
+## 📐 Optical Formulas
+1. **Hyperfocal Distance:** \( H = \frac{f^2}{N \times c} + f \)
+2. **Bokeh Diameter at Infinity:** \( B_{\infty} = \frac{f^2}{N(S - f)} \)
+3. **Field of View:** \( FOV = 2 \times \arctan\left(\frac{h}{2f}\right) \)
 
 ---
 
-## 🛠 Tech Stack (技术栈)
+# 中文
 
-*   **Framework:** React 18 (Vite / Next.js compatible structure)
-*   **3D Engine:** Three.js + @react-three/fiber
-*   **Helpers:** @react-three/drei (OrbitControls, Text, Grid, etc.)
-*   **Post-Processing:** @react-three/postprocessing (DepthOfField effect)
-*   **State Management:** Zustand (Centralized store for physics state)
-*   **Styling:** Tailwind CSS + clsx
+一个基于物理光学公式的教育工具，可视化并模拟摄影中的**景深**和**焦外虚化**。技术栈：**React**、**Three.js (@react-three/fiber)**、**Zustand**。
 
----
+## 🌟 核心功能（按面板）
+- **摄影棚视图 (3D, 左/上)：** 上帝视角展示相机视锥、焦平面、景深体积（近/远限），提供顶/侧/正视预设便于对齐。
+- **取景器视图 (3D, 右/下)：** 基于弥散圆实时渲染焦外虚化，包含呼吸效应与视场角；对焦框随点击移动，点击空白自动跳到最大对焦距离以获得“背景无限远”效果。
+- **原理图 (2D SVG)：** 顶视可拖拽红/绿/蓝物体，直接改变它们的物理距离/位置，并与 3D 场景和对焦逻辑实时同步。
+- **控制面板：** 调焦距（18–200mm）、光圈（f/1.2–f/22）、对焦距离、传感器画幅（全幅/APS-C/M4/3），预设模式（人像/风景/微距），以及取景器光轴平移按钮。
+- **数学面板：** 实时输出超焦距、景深近限/远限、总景深、前后景深分布、弥散圆直径、水平视场角，并随参数即时更新。
 
-## 📐 Optical Formulas Used (使用的光学公式)
+## 🛠 技术栈
+- React 18 + Vite
+- Three.js + @react-three/fiber
+- @react-three/drei（轨道控制、文本、网格等）
+- @react-three/postprocessing（景深、暗角）
+- Zustand（集中存储光学与场景状态）
+- Tailwind CSS + clsx
 
-1.  **Hyperfocal Distance (超焦距):**
-    $$H = \frac{f^2}{N \times c} + f$$
-    *(f = focal length, N = aperture, c = CoC limit)*
-
-2.  **Bokeh Diameter at Infinity (无穷远焦外光斑直径):**
-    $$B_{\infty} = \frac{f^2}{N(S - f)}$$
-    *(S = Focus Distance)*
-
-3.  **Field of View (视场角):**
-    $$FOV = 2 \times \arctan(\frac{h}{2f})$$
-    *(h = sensor dimension)*
+## 📐 光学公式
+1. **超焦距：** \( H = \frac{f^2}{N \times c} + f \)
+2. **无穷远焦外直径：** \( B_{\infty} = \frac{f^2}{N(S - f)} \)
+3. **视场角：** \( FOV = 2 \times \arctan\left(\frac{h}{2f}\right) \)
 
 ---
 
