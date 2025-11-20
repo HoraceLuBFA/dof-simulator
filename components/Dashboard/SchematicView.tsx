@@ -277,7 +277,7 @@ export const SchematicView: React.FC = () => {
 
       <button 
         onClick={resetScene}
-        className="absolute bottom-4 right-4 z-10 flex items-center gap-2 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 bg-slate-800/80 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
+        className="absolute bottom-4 right-4 z-10 flex items-center gap-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-800/80 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
       >
         Reset Position
       </button>

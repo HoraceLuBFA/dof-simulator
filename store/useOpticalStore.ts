@@ -35,15 +35,15 @@ interface ExtendedState extends SimulationState {
 }
 
 export const useOpticalStore = create<ExtendedState>((set, get) => ({
-  focalLength: 50, // 50mm
-  aperture: 2.8, // f/2.8
-  focusDistance: 4.6, // Focus on Green Surface by default
+  focalLength: 85, // 50mm
+  aperture: 5.6, // f/5.6
+  focusDistance: 10, // Focus on Green Surface by default
   sensorType: SensorType.FullFrame,
 
   // Default positions (positive Z distance from origin 0,0,0)
-  distBlue: 3.0,
-  distGreen: 6.0,
-  distRed: 9.0,
+  distBlue: 5.0,
+  distGreen: 10.0,
+  distRed: 15.0,
   
   // Horizontal positions (X axis)
   posBlueX: 0.3,
@@ -54,7 +54,7 @@ export const useOpticalStore = create<ExtendedState>((set, get) => ({
   cameraX: 0,
   cameraY: 1.0,
 
-  studioView: 'free',
+  studioView: 'reset',
 
   setFocalLength: (v) => set({ focalLength: v }),
   setAperture: (v) => set({ aperture: v }),

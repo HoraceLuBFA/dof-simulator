@@ -7,16 +7,31 @@ interface SliderProps {
   max: number;
   step: number;
   unit?: string;
+  unitPosition?: 'prefix' | 'suffix';
   onChange: (val: number) => void;
 }
 
-export const Slider: React.FC<SliderProps> = ({ label, value, min, max, step, unit, onChange }) => {
+export const Slider: React.FC<SliderProps> = ({ 
+  label, 
+  value, 
+  min, 
+  max, 
+  step, 
+  unit, 
+  unitPosition = 'suffix',
+  onChange 
+}) => {
+  const formattedValue =
+    unitPosition === 'prefix'
+      ? `${unit ?? ''}${value}`
+      : `${value}${unit ?? ''}`;
+
   return (
     <div className="mb-4 group">
       <div className="flex justify-between mb-1 text-sm">
         <span className="text-slate-400 font-mono group-hover:text-cyan-400 transition-colors">{label}</span>
         <span className="text-cyan-400 font-bold font-mono">
-          {value}{unit}
+          {formattedValue}
         </span>
       </div>
       <input

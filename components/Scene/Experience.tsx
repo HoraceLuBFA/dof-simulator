@@ -92,9 +92,9 @@ const StudioControls: React.FC = () => {
 
     } else if (studioView === 'reset') {
       // Reset to initial perspective view
-      camera.position.set(8, 5, 8);
+      camera.position.set(5, 5, 5);
       camera.lookAt(0, 0, 0);
-      controls.target.set(0, 0, 0);
+      controls.target.set(0, 0, -5);
     }
 
     controls.update();
@@ -312,7 +312,7 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
               key={view}
               onClick={() => setStudioView(view)}
               className={clsx(
-                'px-2 py-1 text-[10px] font-mono uppercase tracking-wider rounded border transition-all w-max',
+                'w-24 px-2 py-1 text-[10px] font-mono uppercase tracking-wider rounded border transition-all text-center',
                 studioView === view && view !== 'reset'
                   ? 'bg-cyan-500 text-white border-cyan-400'
                   : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white',

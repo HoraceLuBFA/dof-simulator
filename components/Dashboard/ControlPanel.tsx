@@ -69,7 +69,8 @@ export const ControlPanel: React.FC = () => {
           min={1.2}
           max={22}
           step={0.1}
-          unit=" ƒ"
+          unit="ƒ "
+          unitPosition="prefix"
           onChange={setAperture}
         />
 

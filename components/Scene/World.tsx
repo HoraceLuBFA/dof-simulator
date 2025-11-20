@@ -253,7 +253,7 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
       <group position={[posRedX, 1.0, -distRed]}>
         <Float speed={1} rotationIntensity={0.05} floatIntensity={0.1}>
             <mesh ref={cubeRef} castShadow receiveShadow onClick={focusOnObject('red')}>
-              <boxGeometry args={[0.3, 0.3, 0.3]} />
+              <boxGeometry args={[0.4, 0.4, 0.4]} />
               <meshStandardMaterial color="#ef4444" roughness={0.5} />
             </mesh>
         </Float>
