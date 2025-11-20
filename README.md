@@ -24,29 +24,15 @@ An advanced, physics-based educational tool that visualizes and simulates camera
 - Tailwind CSS + clsx
 
 ## 📐 Optical Formulas
-1. **Hyperfocal Distance:**
+1. **Hyperfocal Distance:** $$H = \frac{f^2}{N \times c} + f$$
 
-$$H = \frac{f^2}{N \times c} + f$$
+2. **Bokeh Diameter at Infinity:** $$B_{\infty} = \frac{f^2}{N(S - f)}$$
 
-2. **Bokeh Diameter at Infinity:**
-
-   $$
-   B_{\infty} = \frac{f^2}{N(S - f)}
-   $$
-
-3. **Field of View:**
-
-   $$
-   FOV = 2 \times \arctan\left(\frac{h}{2f}\right)
-   $$
+3. **Field of View:** $$FOV = 2 \times \arctan\left(\frac{h}{2f}\right)$$
 
 4. **Depth of Field:**
 
-   $$
-   DoF = D_f - D_n,\quad
-   D_n = \frac{H \cdot S}{H + S - f},\quad
-   D_f = \frac{H \cdot S}{H - S + f}
-   $$
+   $$DoF = D_f - D_n,\quad D_n = \frac{H \cdot S}{H + S - f},\quad D_f = \frac{H \cdot S}{H - S + f}$$
 
    If $D_f \rightarrow \infty$, then $DoF \rightarrow \infty$.
 
