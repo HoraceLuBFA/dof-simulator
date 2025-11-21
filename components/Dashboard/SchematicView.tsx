@@ -11,10 +11,11 @@ export const SchematicView: React.FC = () => {
     setDistBlue, setDistGreen, setDistRed,
     setPosBlueX, setPosGreenX, setPosRedX,
     cameraX,
+    setFocusDistance,
     resetScene
   } = useOpticalStore();
 
-  const [dragging, setDragging] = useState<'blue' | 'green' | 'red' | null>(null);
+  const [dragging, setDragging] = useState<'blue' | 'green' | 'red' | 'focus' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   
@@ -116,6 +117,15 @@ export const SchematicView: React.FC = () => {
     e.preventDefault();
     const mouse = getMousePos(e);
     
+    if (dragging === 'focus') {
+      let newZ = mouse.z + dragOffset.current.z;
+      if (newZ < 0.5) newZ = 0.5;
+      if (newZ > WORLD_DEPTH_METERS) newZ = WORLD_DEPTH_METERS;
+      // Snap to 0.1m to match ControlPanel slider granularity and avoid drift (e.g., 14.97 vs 15.0)
+      setFocusDistance(parseFloat(newZ.toFixed(1)));
+      return;
+    }
+
     // Calculate new Z
     let newZ = mouse.z + dragOffset.current.z;
     if (newZ < 0.5) newZ = 0.5;
@@ -137,6 +147,20 @@ export const SchematicView: React.FC = () => {
     if (svgRef.current) {
         svgRef.current.releasePointerCapture(e.pointerId);
     }
+  };
+
+  const handleFocusPointerDown = (e: React.PointerEvent, currentZ: number) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (svgRef.current) {
+      svgRef.current.setPointerCapture(e.pointerId);
+    }
+    const mouse = getMousePos(e);
+    dragOffset.current = {
+      z: currentZ - mouse.z,
+      x: 0
+    };
+    setDragging('focus');
   };
 
   // Camera Position
@@ -233,9 +257,15 @@ export const SchematicView: React.FC = () => {
           opacity="0.4"
         />
         
-        {/* Focus Plane */}
-        <line x1={0} y1={focusY} x2={SVG_WIDTH} y2={focusY} stroke="#ffffff" strokeWidth="2" strokeDasharray="4 2" opacity="0.5" />
-        <text x="10" y={focusY - 5} fill="#ffffff" fontSize="10" className="font-mono">FOCUS PLANE</text>
+        {/* Focus Plane (draggable) */}
+        <g onPointerDown={(e) => handleFocusPointerDown(e, focusDistance)} className="cursor-ns-resize">
+          {/* Larger hit area for touch/drag */}
+          <rect x={0} y={focusY - 6} width={SVG_WIDTH} height={12} fill="transparent" />
+          <line x1={0} y1={focusY} x2={SVG_WIDTH} y2={focusY} stroke="#ffffff" strokeWidth="2" strokeDasharray="4 2" opacity="0.5" />
+          <text x="10" y={focusY - 5} fill="#ffffff" fontSize="10" className="font-mono">
+            FOCUS PLANE ({focusDistance.toFixed(1)} m)
+          </text>
+        </g>
 
         <defs>
           <linearGradient id="dofGradient" x1="0" x2="0" y1="0" y2="1">
@@ -277,7 +307,7 @@ export const SchematicView: React.FC = () => {
 
       <button 
         onClick={resetScene}
-        className="absolute bottom-4 right-4 z-10 flex items-center gap-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-800/80 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
+        className="absolute top-4 right-4 z-10 flex items-center gap-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-800/80 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
       >
         Reset Position
       </button>

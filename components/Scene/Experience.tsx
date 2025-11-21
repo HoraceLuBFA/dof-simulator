@@ -67,20 +67,29 @@ const StudioControls: React.FC = () => {
     const CAM_Z = 0.2;
     const focusZ = CAM_Z - focusDistance;
 
-    if (studioView === 'top') {
-      // Top View: 
-      // 1. Z轴位置对齐焦平面 (0.2 - focusDistance)
-      // 2. Y轴高度降低到 12 (更近)
+    if (studioView === 'topFocus') {
+      // Top view aligned to focus plane (origin)
       camera.position.set(0.01, 12, focusZ);
       camera.lookAt(0, 0, focusZ);
       controls.target.set(0, 0, focusZ);
 
-    } else if (studioView === 'side') {
-      // Side View:
-      // Z轴位置也对齐焦平面，其他(X=12, Y=2)保持不变
+    } else if (studioView === 'topCamera') {
+      // Top view aligned to the virtual camera's Z plane (CAM_Z)
+      camera.position.set(cameraX + 0.01, cameraY + 12, CAM_Z);
+      camera.lookAt(cameraX, cameraY, CAM_Z);
+      controls.target.set(cameraX, cameraY, CAM_Z);
+
+    } else if (studioView === 'sideFocus') {
+      // Side view aligned to focus plane (origin)
       camera.position.set(12, 2, focusZ);
       camera.lookAt(0, 2, focusZ);
       controls.target.set(0, 2, focusZ);
+
+    } else if (studioView === 'sideCamera') {
+      // Side view aligned to the virtual camera's Z plane (CAM_Z)
+      camera.position.set(cameraX + 12, cameraY + 2, CAM_Z);
+      camera.lookAt(cameraX, cameraY + 2, CAM_Z);
+      controls.target.set(cameraX, cameraY + 2, CAM_Z);
 
     } else if (studioView === 'front') {
       // 正视图：位于虚拟摄影机正后方 2m (CAM_Z + 2.0)
@@ -306,19 +315,26 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
 
       {/* Studio 视角切换按钮 */}
       {mode === 'studio' && (
-        <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 items-end">
-          {(['top', 'side', 'front', 'reset'] as const).map((view) => (
+        <div className="absolute top-4 right-4 z-20 flex flex-col gap-1 items-end">
+          {([
+            { key: 'topCamera', label: 'TOP (CAMERA)' },
+            { key: 'topFocus', label: 'TOP (FOCUS)' },
+            { key: 'sideCamera', label: 'SIDE (CAMERA)' },
+            { key: 'sideFocus', label: 'SIDE (FOCUS)' },
+            { key: 'front', label: 'FRONT' },
+            { key: 'reset', label: 'RESET VIEW' },
+          ] as const).map((view) => (
             <button
-              key={view}
-              onClick={() => setStudioView(view)}
+              key={view.key}
+              onClick={() => setStudioView(view.key as any)}
               className={clsx(
-                'w-24 px-2 py-1 text-[10px] font-mono uppercase tracking-wider rounded border transition-all text-center',
-                studioView === view && view !== 'reset'
+                'w-28 px-2 py-1 text-[10px] font-mono uppercase tracking-wider rounded border transition-all text-center',
+                studioView === view.key && view.key !== 'reset'
                   ? 'bg-cyan-500 text-white border-cyan-400'
                   : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white',
               )}
             >
-              {view === 'reset' ? 'reset view' : view}
+              {view.label}
             </button>
           ))}
         </div>

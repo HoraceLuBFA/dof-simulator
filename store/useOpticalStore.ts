@@ -30,8 +30,8 @@ interface ExtendedState extends SimulationState {
   resetScene: () => void;
 
   // Studio View Camera Presets
-  studioView: 'free' | 'top' | 'side' | 'front' | 'reset';
-  setStudioView: (v: 'free' | 'top' | 'side' | 'front' | 'reset') => void;
+  studioView: 'free' | 'topFocus' | 'topCamera' | 'sideFocus' | 'sideCamera' | 'front' | 'reset';
+  setStudioView: (v: 'free' | 'topFocus' | 'topCamera' | 'sideFocus' | 'sideCamera' | 'front' | 'reset') => void;
 }
 
 export const useOpticalStore = create<ExtendedState>((set, get) => ({
