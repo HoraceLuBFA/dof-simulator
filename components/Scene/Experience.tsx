@@ -96,8 +96,8 @@ const StudioControls: React.FC<{ flySpeed: number }> = ({ flySpeed }) => {
     } else if (studioView === 'front') {
       // 正视图：位于虚拟摄影机正后方 2m (CAM_Z + 2.0)
       // 保持视线与虚拟摄影机一致 (看向 -Z)
-      const offsetZ = 5.0;
-      camera.position.set(cameraX, cameraY + 2.0, CAM_Z + offsetZ);
+      const offsetZ = 2.5;
+      camera.position.set(cameraX, cameraY+1, CAM_Z + offsetZ);
       camera.lookAt(cameraX, cameraY, -10);
       controls.target.set(cameraX, cameraY, -10);
 
@@ -144,8 +144,19 @@ const StudioControls: React.FC<{ flySpeed: number }> = ({ flySpeed }) => {
 
       if (moveVec.lengthSq() > 0) {
         moveVec.normalize().multiplyScalar(speed);
-        cam.position.add(moveVec);
-        controls.target.add(moveVec);
+        // Propose new positions
+        const nextCam = cam.position.clone().add(moveVec);
+        const nextTarget = controls.target.clone().add(moveVec);
+        const minY = 0.2;
+
+        if (nextCam.y < minY) {
+          const dy = minY - nextCam.y;
+          nextCam.y = minY;
+          nextTarget.y += dy;
+        }
+
+        cam.position.copy(nextCam);
+        controls.target.copy(nextTarget);
         controls.update();
         setStudioView('free');
       }
@@ -364,11 +375,28 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
     setLightLevel,
   } = useOpticalStore();
   const [focusBoxPos, setFocusBoxPos] = useState({ x: 50, y: 50 });
-  const [flySpeed, setFlySpeed] = useState(0.35);
+  const [flySpeed, setFlySpeed] = useState(0.2);
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1024,
   );
   const showFlyHud = true;
+
+  const sendFlyKey = useCallback(
+    (code: 'KeyW' | 'KeyA' | 'KeyS' | 'KeyD' | 'KeyQ' | 'KeyE', type: 'keydown' | 'keyup') => {
+      const keyMap: Record<typeof code, string> = {
+        KeyW: 'w',
+        KeyA: 'a',
+        KeyS: 's',
+        KeyD: 'd',
+        KeyQ: 'q',
+        KeyE: 'e',
+      };
+      const key = keyMap[code];
+      const evt = new KeyboardEvent(type, { code, key, repeat: type === 'keydown' });
+      window.dispatchEvent(evt);
+    },
+    [],
+  );
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -376,14 +404,14 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Responsive scaling for HUDs; smooth piecewise to avoid sudden shrink at 1024px
+  // Responsive scaling for HUDs; smooth piecewise to avoid sudden shrink and ensure mobile spacing
   const hudScale = useMemo(() => {
     const highW = 1400;
-    const midW = 1024;
-    const lowW = 640;
+    const midW = 1120;
+    const lowW = 720;
     const high = 0.9;
-    const mid = 0.8;
-    const low = 0.65;
+    const mid = 0.78;
+    const low = 0.55;
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -424,73 +452,74 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
       <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
         <div className="flex flex-col">
           {mode === 'studio' ? (
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-slate-900/80 px-2 py-1 rounded border border-cyan-900/50 backdrop-blur">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-cyan-400 bg-slate-900/80 px-2 py-1 rounded border border-cyan-900/50 backdrop-blur">
               Studio View
             </span>
           ) : (
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-400 bg-slate-900/80 px-2 py-1 rounded border border-rose-900/50 backdrop-blur">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-400 bg-slate-900/80 px-2 py-1 rounded border border-rose-900/50 backdrop-blur">
               Viewfinder
             </span>
           )}
         </div>
       </div>
 
-      {/* Studio 视角切换按钮 */}
+      {/* Lighting + View Presets (Studio Only) */}
       {mode === 'studio' && (
         <div
-          className="absolute top-4 right-4 z-20 flex flex-col gap-1 items-end"
-          style={{ transform: `scale(${hudScale})`, transformOrigin: 'top right' }}
-        >
-          {([
-            { key: 'topCamera', label: 'TOP (CAMERA)' },
-            { key: 'topFocus', label: 'TOP (FOCUS)' },
-            { key: 'sideCamera', label: 'SIDE (CAMERA)' },
-            { key: 'sideFocus', label: 'SIDE (FOCUS)' },
-            { key: 'front', label: 'FRONT' },
-            { key: 'reset', label: 'RESET VIEW' },
-          ] as const).map((view) => (
-            <button
-              key={view.key}
-              onClick={() => setStudioView(view.key as any)}
-              className={clsx(
-                'w-28 px-2 py-1 text-[10px] font-mono uppercase tracking-wider rounded border transition-all text-center',
-                studioView === view.key && view.key !== 'reset'
-                  ? 'bg-cyan-500 text-white border-cyan-400'
-                  : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white',
-              )}
-            >
-              {view.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Lighting Slider (Studio Only) */}
-      {mode === 'studio' && (
-        <div
-          className="absolute bottom-4 left-4 z-30 flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-full px-3 py-2 backdrop-blur"
+          className="absolute bottom-3 left-4 z-30 flex flex-col items-start gap-2"
           style={{ transform: `scale(${hudScale})`, transformOrigin: 'bottom left' }}
         >
-          <span className="text-lg leading-none">🌙</span>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={lightLevel}
-            onChange={(e) => setLightLevel(parseFloat(e.target.value))}
-            className="w-36 accent-amber-300 bg-transparent cursor-pointer"
-            aria-label="Lighting from night to day"
-          />
-          <span className="text-lg leading-none">☀️</span>
+          <div className="flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-full px-3 py-2 backdrop-blur">
+            <span className="text-lg leading-none">🌙</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={lightLevel}
+              onChange={(e) => setLightLevel(parseFloat(e.target.value))}
+              className="w-36 accent-amber-300 bg-transparent cursor-pointer"
+              aria-label="Lighting from night to day"
+            />
+            <span className="text-lg leading-none">☀️</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 w-full max-w-[240px]">
+            {([
+              { key: 'topCamera', label: 'TOP (CAMERA)' },
+              { key: 'topFocus', label: 'TOP (FOCUS)' },
+              { key: 'sideCamera', label: 'SIDE (CAMERA)' },
+              { key: 'sideFocus', label: 'SIDE (FOCUS)' },
+              { key: 'front', label: 'FRONT (CAMERA)' },
+              { key: 'reset', label: 'RESET VIEW' },
+            ] as const).map((view) => (
+              <button
+                key={view.key}
+                onClick={() => setStudioView(view.key as any)}
+                className={clsx(
+                  'w-full px-2 py-1 text-[10px] font-mono uppercase tracking-wider rounded border transition-all text-center',
+                  studioView === view.key && view.key !== 'reset'
+                    ? 'bg-cyan-500 text-white border-cyan-400'
+                    : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white',
+                )}
+              >
+                {view.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Studio keyboard hint + speed */}
       {mode === 'studio' && showFlyHud && (
         <div
-          className="absolute bottom-3 right-3 z-30 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-3 backdrop-blur shadow-lg w-[164px]"
-          style={{ transform: `scale(${hudScale})`, transformOrigin: 'bottom right' }}
+          className="absolute z-30 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-2 backdrop-blur shadow-lg w-[150px]"
+          style={{
+            transform: `scale(${hudScale})`,
+            transformOrigin: 'bottom right',
+            right: viewportWidth < 640 ? '8px' : '12px',
+            bottom: viewportWidth < 640 ? '12px' : '12px',
+          }}
         >
           <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono uppercase tracking-wider">
             <span>Fly Speed</span>
@@ -499,7 +528,7 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
           <input
             type="range"
             min={0.1}
-            max={2}
+            max={1}
             step={0.05}
             value={flySpeed}
             onChange={(e) => setFlySpeed(parseFloat(e.target.value))}
@@ -516,9 +545,24 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
               { key: 'D', label: 'Right' },
             ].map((item) => (
               <div key={item.key} className="flex flex-col items-center gap-0.5">
-                <div className="w-7 h-7 flex items-center justify-center bg-slate-800/90 border border-slate-700 rounded-sm">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    sendFlyKey(`Key${item.key}` as any, 'keydown');
+                  }}
+                  onPointerUp={(e) => {
+                    e.stopPropagation();
+                    sendFlyKey(`Key${item.key}` as any, 'keyup');
+                  }}
+                  onPointerLeave={(e) => {
+                    e.stopPropagation();
+                    sendFlyKey(`Key${item.key}` as any, 'keyup');
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-slate-800/90 border border-slate-700 rounded-sm hover:bg-cyan-700/60 active:scale-95 transition"
+                >
                   {item.key}
-                </div>
+                </button>
                 <span className="text-[10px] text-slate-400 leading-none">{item.label}</span>
               </div>
             ))}
@@ -545,7 +589,13 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
             </div>
 
             {/* REC 指示灯 */}
-            <div className="absolute top-8 right-8 flex items-center gap-2">
+            <div
+              className="absolute z-20 flex items-center gap-2"
+              style={{
+                top: viewportWidth < 640 ? '10px' : '32px',
+                right: viewportWidth < 640 ? '10px' : '32px',
+              }}
+            >
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
               <span className="text-white font-mono text-xs tracking-widest">
                 REC
@@ -566,7 +616,10 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
           </div>
 
           {/* 光轴平移控制 */}
-          <div className="absolute bottom-8 right-8 z-30 flex flex-col items-center gap-1">
+          <div
+            className="absolute bottom-8 right-8 z-30 flex flex-col items-center gap-1"
+            style={{ transform: `scale(${hudScale})`, transformOrigin: 'bottom right' }}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();

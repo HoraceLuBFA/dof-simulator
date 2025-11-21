@@ -32,7 +32,7 @@ export const ControlPanel: React.FC = () => {
 
   return (
     <div className="relative p-6 pt-12 h-full flex flex-col gap-6 overflow-y-auto">
-      <span className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-amber-300 bg-slate-900/80 px-2 py-1 rounded border border-amber-800/60 backdrop-blur">
+      <span className="absolute top-4 left-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-300 bg-slate-900/80 px-2 py-1 rounded border border-amber-800/60 backdrop-blur">
         Optical Variables
       </span>
 

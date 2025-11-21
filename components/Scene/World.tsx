@@ -153,6 +153,25 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
     };
   }, [lightLevel]);
 
+  // Labels adapt with lighting: brighter light -> darker text for contrast
+  const labelColors = useMemo(() => {
+    const base = new T.Color('#e2e8f0'); // light for night
+    const dark = new T.Color('#0f172a'); // darker for day
+    const gridBase = new T.Color('#475569');
+    const gridDark = new T.Color('#0b1626');
+    const focusBase = new T.Color('#f1f5f9');
+    const focusDark = new T.Color('#0b2f3c');
+
+    const lerpHex = (c1: THREE.Color, c2: THREE.Color, t: number) =>
+      `#${c1.clone().lerp(c2, t).getHexString()}`;
+
+    return {
+      subject: lerpHex(base, dark, lightLevel),
+      focus: lerpHex(focusBase, focusDark, lightLevel),
+      grid: lerpHex(gridBase, gridDark, lightLevel),
+    };
+  }, [lightLevel]);
+
   // DoF cone styling: strengthen contrast for daytime
   const dofVisual = useMemo(() => {
     const base = new T.Color('#22d3ee');
@@ -245,29 +264,29 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
             
             {/* 3. Focus Plane */}
             <group position={[0, 0, fovVisuals.focus.z]}>
-                <mesh raycast={() => null}>
-                    <planeGeometry args={[fovVisuals.focus.w, fovVisuals.focus.h]} />
-                    <meshBasicMaterial
-                      color={dofVisual.focusColor}
-                      opacity={dofVisual.focusOpacity}
+        <mesh raycast={() => null}>
+            <planeGeometry args={[fovVisuals.focus.w, fovVisuals.focus.h]} />
+            <meshBasicMaterial
+              color={dofVisual.focusColor}
+              opacity={dofVisual.focusOpacity}
                       transparent
                       side={T.DoubleSide}
                       depthWrite={false}
                     />
-                </mesh>
-                <lineSegments>
-                    <edgesGeometry args={[new T.PlaneGeometry(fovVisuals.focus.w, fovVisuals.focus.h)]} />
-                    <lineBasicMaterial color={dofVisual.edge} opacity={0.85} transparent />
-                </lineSegments>
-                <Text 
-                    position={[-fovVisuals.focus.w/2 - 0.2, 0, 0]} 
-                    fontSize={0.25}
-                    color="white" 
-                    anchorX="right" 
-                    anchorY="middle"
-                    fillOpacity={0.9}
-                >
-                    FOCUS PLANE
+        </mesh>
+        <lineSegments>
+            <edgesGeometry args={[new T.PlaneGeometry(fovVisuals.focus.w, fovVisuals.focus.h)]} />
+            <lineBasicMaterial color={dofVisual.edge} opacity={0.85} transparent />
+        </lineSegments>
+        <Text 
+            position={[-fovVisuals.focus.w/2 - 0.2, 0, 0]} 
+            fontSize={0.15}
+            color={labelColors.focus} 
+            anchorX="right" 
+            anchorY="middle"
+            fillOpacity={0.9}
+        >
+            FOCUS PLANE
                 </Text>
             </group>
         </group>
@@ -282,7 +301,7 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
           </mesh>
         </Float>
         {mode === 'studio' && (
-          <Text position={[0, 0.4, 0]} fontSize={0.25} color="white" anchorX="center" anchorY="middle">
+          <Text position={[0, 0.4, 0]} fontSize={0.15} color={labelColors.subject} anchorX="center" anchorY="middle">
             {distBlue.toFixed(1)}m
           </Text>
         )}
@@ -296,7 +315,7 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
             </mesh>
         </Float>
         {mode === 'studio' && (
-          <Text position={[0, 0.7, 0]} fontSize={0.25} color="white" anchorX="center" anchorY="middle">
+          <Text position={[0, 0.7, 0]} fontSize={0.15} color={labelColors.subject} anchorX="center" anchorY="middle">
             {distGreen.toFixed(1)}m
           </Text>
         )}
@@ -310,14 +329,14 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
             </mesh>
         </Float>
         {mode === 'studio' && (
-           <Text position={[0, 1.0, 0]} fontSize={0.25} color="white" anchorX="center" anchorY="middle">
+           <Text position={[0, 1.0, 0]} fontSize={0.15} color={labelColors.subject} anchorX="center" anchorY="middle">
             {distRed.toFixed(1)}m
           </Text>
         )}
       </group>
       
       {[2, 5, 10, 15, 20, 30].map((z) => (
-         <Text key={z} position={[4, 0.02, -z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.5} color="#334155">
+         <Text key={z} position={[4, 0.02, -z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.5} color={labelColors.grid}>
            {z}m
          </Text>
       ))}
@@ -445,14 +464,25 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
                  <meshStandardMaterial color="#475569" transparent opacity={0.4} roughness={0.8} />
              </mesh>
 
-             {/* Red Ring */}
-             <mesh rotation={[Math.PI/2, 0, 0]} position={[0, 0, -lensBarrelLength + 0.005]}>
-                 <cylinderGeometry args={[0.053, 0.053, 0.005, 32]} />
-                 <meshStandardMaterial color="#b91c1c" transparent opacity={0.8} roughness={0.2} />
-             </mesh>
+            {/* Red Ring */}
+            <mesh rotation={[Math.PI/2, 0, 0]} position={[0, 0, -lensBarrelLength + 0.005]}>
+                <cylinderGeometry args={[0.053, 0.053, 0.005, 32]} />
+                <meshStandardMaterial color="#b91c1c" transparent opacity={0.8} roughness={0.2} />
+            </mesh>
 
-             {/* Matte Box (4-Leaf Cinema Style) */}
-             <group position={[0, 0, -lensBarrelLength - 0.02]}>
+            {/* Sensor Plane marker */}
+            <Text
+              position={[0.6, 0.25, 0.1]}
+              fontSize={0.15}
+              color={labelColors.focus}
+              anchorX="left"
+              anchorY="middle"
+            >
+              {`SENSOR PLANE\nX=${cameraX.toFixed(2)}, Y=${cameraY.toFixed(2)}`}
+            </Text>
+
+            {/* Matte Box (4-Leaf Cinema Style) */}
+            <group position={[0, 0, -lensBarrelLength - 0.02]}>
                  {/* Adapter Ring */}
                  <mesh rotation={[Math.PI/2, 0, 0]}>
                      <cylinderGeometry args={[0.062, 0.062, 0.02, 32]} />

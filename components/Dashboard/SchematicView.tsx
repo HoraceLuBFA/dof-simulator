@@ -168,7 +168,7 @@ export const SchematicView: React.FC = () => {
   const cameraSvgX = mapX(cameraX);
   
   const focusPlaneVisualZ = Number.isFinite(focusDistance) ? focusDistance : WORLD_DEPTH_METERS;
-  const focusLabel = Number.isFinite(focusDistance) ? `${focusDistance.toFixed(1)} m` : '∞';
+  const focusLabel = Number.isFinite(focusDistance) ? `${focusDistance.toFixed(1)}m` : '∞';
   const focusY = mapZ(Math.min(focusPlaneVisualZ, WORLD_DEPTH_METERS));
   const nearY = mapZ(metrics.nearLimit);
   
@@ -211,7 +211,7 @@ export const SchematicView: React.FC = () => {
       ref={containerRef} 
       className="w-full aspect-[2/1] min-h-[300px] lg:min-h-[320px] overflow-hidden relative flex flex-col select-none px-2 sm:px-4 pt-10 pb-4 lg:aspect-[2/1]]"
     >
-        <p className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-cyan-300 bg-slate-900/80 px-2 py-1 rounded border border-cyan-800/60 backdrop-blur pointer-events-none">
+        <p className="absolute top-4 left-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-cyan-300 bg-slate-900/80 px-2 py-1 rounded border border-cyan-800/60 backdrop-blur pointer-events-none">
           Schematic (Drag Points)
         </p>
       
@@ -265,7 +265,7 @@ export const SchematicView: React.FC = () => {
           <rect x={0} y={focusY - 6} width={SVG_WIDTH} height={12} fill="transparent" />
           <line x1={0} y1={focusY} x2={SVG_WIDTH} y2={focusY} stroke="#ffffff" strokeWidth="2" strokeDasharray="4 2" opacity="0.5" />
           <text x="10" y={focusY - 5} fill="#ffffff" fontSize="10" className="font-mono">
-            FOCUS PLANE ({focusLabel})
+            FOCUS PLANE {focusLabel}
           </text>
         </g>
 
@@ -309,7 +309,7 @@ export const SchematicView: React.FC = () => {
 
       <button 
         onClick={resetScene}
-        className="absolute top-4 right-4 z-10 flex items-center gap-2 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-800/80 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
+        className="absolute top-4 right-4 z-10 flex items-center gap-2 px-2 py-1 text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-800/80 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
       >
         Reset Position
       </button>

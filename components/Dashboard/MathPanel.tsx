@@ -29,7 +29,7 @@ export const MathPanel: React.FC = () => {
 
   return (
     <div className="relative p-6 pt-12 flex flex-col gap-3 font-mono text-sm h-full overflow-y-auto">
-      <span className="absolute top-4 left-4 text-xs font-bold uppercase tracking-wider text-indigo-300 bg-slate-900/80 px-2 py-1 rounded border border-indigo-800/60 backdrop-blur">
+      <span className="absolute top-4 left-4 text-[10px] sm:text-xs font-sans font-bold uppercase tracking-wider text-cyan-300 bg-slate-900/80 px-2 py-1 rounded border border-cyan-800/60 backdrop-blur">
         Results
       </span>
       
