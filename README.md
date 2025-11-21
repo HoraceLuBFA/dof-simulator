@@ -1,15 +1,16 @@
-[English](#English) | [中文](#中文)
+# Interactive Depth of Field Simulator 交互式景深模拟器
 
-### English
+[English](#english) | [中文](#中文)
 
-# Interactive Depth of Field Simulator
+## English
 
 Physics-based DoF and bokeh visualizer built with React, Three.js (@react-three/fiber), and Zustand. Try online or run locally.
 
-- **Live demo:** https://dof.lumenghe.com
+- **Live demo:** <https://dof.lumenghe.com>
 - **Tech:** React 18 + Vite, Three.js, @react-three/fiber, @react-three/drei, @react-three/postprocessing, Zustand, Tailwind.
 
 ## Features by panel
+
 - **Studio View (3D):** Camera frustum, focus plane, DoF volume; Top/Side/Front presets.
 +- **Viewfinder (3D):** Physically driven bokeh (CoC-based), FOV/breathing, click-to-move focus box, infinity fallback on miss.
 - **Schematic (2D SVG):** Top-down drag of RGB objects; synced distances/positions with 3D scenes and focus logic.
@@ -17,6 +18,7 @@ Physics-based DoF and bokeh visualizer built with React, Three.js (@react-three/
 - **Math Panel:** Hyperfocal, DoF near/far limits, total DoF, front/back split, CoC diameter, horizontal FOV; updates live with inputs.
 
 ## Optical formulas
+
 1. **Hyperfocal Distance**
 
    $$H = \frac{f^2}{N \times c} + f$$
@@ -35,9 +37,7 @@ Physics-based DoF and bokeh visualizer built with React, Three.js (@react-three/
 
    $$D_n = \frac{H \cdot S}{H + S - f}, \quad D_f = \frac{H \cdot S}{H - S + f}$$
 
-   $$ If \quad D_f \rightarrow \infty,\quad then \quad DoF \rightarrow \infty $$
-
-<div align="center">
+   If $D_f \rightarrow \infty$, then $DoF \rightarrow \infty$.
 
 | Symbol | Meaning |
 | --- | --- |
@@ -53,9 +53,8 @@ Physics-based DoF and bokeh visualizer built with React, Three.js (@react-three/
 | $D_f$ | far focus limit |
 | $DoF$ | depth of field |
 
-</div>
-
 ## Quick start (local)
+
 1) Install deps: `npm install`  
 2) Dev server: `npm run dev` (open the shown localhost URL)  
 3) Build: `npm run build`  
@@ -65,16 +64,15 @@ Serve `dist/` with any static server for production.
 
 ---
 
-### 中文
-
-# 交互式景深模拟器
+## 中文
 
 基于光学公式的景深/焦外可视化工具。线上可试用，亦可本地运行。
 
-- **在线体验**：https://dof.lumenghe.com
+- **在线体验**：<https://dof.lumenghe.com>
 - **技术栈**：React 18 + Vite，Three.js，@react-three/fiber，@react-three/drei，@react-three/postprocessing，Zustand，Tailwind。
 
 ## 面板功能
+
 - **摄影棚视图 (3D)：** 显示视锥、焦平面、景深体积；内置顶/侧/正视预设。
 - **取景器视图 (3D)：** 基于弥散圆的实时虚化，呼吸与视场角同步；点击移动对焦框，未命中则对到“无穷远”。
 - **原理图 (2D SVG)：** 顶视拖拽红/绿/蓝目标，距离/位置与 3D 场景和对焦逻辑同步。
@@ -82,6 +80,7 @@ Serve `dist/` with any static server for production.
 - **数学面板：** 超焦距、景深近/远限、总景深、前后景深分布、弥散圆直径、水平视场角，实时刷新。
 
 ## 光学公式
+
 1. **超焦距**
 
    $$H = \frac{f^2}{N \times c} + f$$
@@ -99,10 +98,8 @@ Serve `dist/` with any static server for production.
    $$DoF = D_f - D_n$$
 
    $$D_n = \frac{H \cdot S}{H + S - f}, \quad D_f = \frac{H \cdot S}{H - S + f}$$
-   
-   $$ 若 \quad D_f \rightarrow \infty,\quad 则 \quad DoF \rightarrow \infty $$
 
-<div align="center">
+   若 $D_f \rightarrow \infty$，则 $DoF \rightarrow \infty$
 
 | 符号 | 含义 |
 | --- | --- |
@@ -118,9 +115,8 @@ Serve `dist/` with any static server for production.
 | $D_f$ | 景深远限 |
 | $DoF$ | 景深 |
 
-</div>
-
 ## 本地运行
+
 1) 安装依赖：`npm install`  
 2) 开发模式：`npm run dev`（按提示打开本地地址）  
 3) 构建：`npm run build`  
