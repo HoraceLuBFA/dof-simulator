@@ -26,6 +26,7 @@ const CameraController: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mode })
   useEffect(() => {
     // Fix: Ensure we are working with a PerspectiveCamera to access .fov
     if (!(camera instanceof T.PerspectiveCamera)) return;
+    const perspective = camera as THREE.PerspectiveCamera;
 
     if (mode === 'viewfinder') {
       const { height: sensorHeight } = getSensorDimensions(sensorType);
@@ -33,14 +34,14 @@ const CameraController: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mode })
       const fov = (2 * Math.atan(sensorHeight / (2 * focalLength)) * 180) / Math.PI;
 
       const CAM_Z = 0.2;
-      camera.position.set(cameraX, cameraY, CAM_Z);
-      camera.lookAt(cameraX, cameraY, -10);
+      perspective.position.set(cameraX, cameraY, CAM_Z);
+      perspective.lookAt(cameraX, cameraY, -10);
 
-      camera.fov = fov;
-      camera.updateProjectionMatrix();
+      perspective.fov = fov;
+      perspective.updateProjectionMatrix();
     } else {
-      camera.fov = 50;
-      camera.updateProjectionMatrix();
+      perspective.fov = 50;
+      perspective.updateProjectionMatrix();
     }
   }, [focalLength, mode, sensorType, cameraX, cameraY, camera]);
 
