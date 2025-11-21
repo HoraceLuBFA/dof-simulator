@@ -8,6 +8,7 @@ interface SliderProps {
   step: number;
   unit?: string;
   unitPosition?: 'prefix' | 'suffix';
+  displayValue?: string;
   onChange: (val: number) => void;
 }
 
@@ -19,12 +20,14 @@ export const Slider: React.FC<SliderProps> = ({
   step, 
   unit, 
   unitPosition = 'suffix',
+  displayValue,
   onChange 
 }) => {
   const formattedValue =
-    unitPosition === 'prefix'
+    displayValue ??
+    (unitPosition === 'prefix'
       ? `${unit ?? ''}${value}`
-      : `${value}${unit ?? ''}`;
+      : `${value}${unit ?? ''}`);
 
   return (
     <div className="mb-4 group">

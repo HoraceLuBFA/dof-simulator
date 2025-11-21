@@ -51,10 +51,12 @@ const CameraController: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mode })
  * StudioControls
  * - Studio 模式下的轨道控制与视角切换
  */
-const StudioControls: React.FC = () => {
+const StudioControls: React.FC<{ flySpeed: number }> = ({ flySpeed }) => {
   const { studioView, setStudioView, focusDistance, cameraX, cameraY } = useOpticalStore();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera } = useThree();
+  const focusDistanceVisual = Number.isFinite(focusDistance) ? focusDistance : 50;
+  const isTypingRef = useRef(false);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -65,7 +67,7 @@ const StudioControls: React.FC = () => {
     controls.maxPolarAngle = Math.PI / 1.9;
 
     const CAM_Z = 0.2;
-    const focusZ = CAM_Z - focusDistance;
+    const focusZ = CAM_Z - focusDistanceVisual;
 
     if (studioView === 'topFocus') {
       // Top view aligned to focus plane (origin)
@@ -107,7 +109,90 @@ const StudioControls: React.FC = () => {
     }
 
     controls.update();
-  }, [studioView, camera, focusDistance, cameraX, cameraY]);
+  }, [studioView, camera, focusDistanceVisual, cameraX, cameraY]);
+
+  // Unreal-style WASD/QE fly moves
+  useEffect(() => {
+    const pressed = new Set<string>();
+    const moveVec = new T.Vector3();
+    const dir = new T.Vector3();
+    const right = new T.Vector3();
+    const up = new T.Vector3(0, 1, 0);
+    let raf: number | null = null;
+
+    const step = () => {
+      const controls = controlsRef.current;
+      if (!controls) return;
+      const cam = controls.object as THREE.Camera;
+
+      dir.set(0, 0, 0);
+      right.set(0, 0, 0);
+      moveVec.set(0, 0, 0);
+
+      cam.getWorldDirection(dir).normalize();
+      right.crossVectors(dir, up).normalize();
+
+      const speedMultiplier = (pressed.has('ShiftLeft') || pressed.has('ShiftRight')) ? 2.4 : 1;
+      const speed = flySpeed * speedMultiplier;
+
+      if (pressed.has('KeyW')) moveVec.add(dir);
+      if (pressed.has('KeyS')) moveVec.addScaledVector(dir, -1);
+      if (pressed.has('KeyA')) moveVec.addScaledVector(right, -1);
+      if (pressed.has('KeyD')) moveVec.addScaledVector(right, 1);
+      if (pressed.has('KeyQ')) moveVec.addScaledVector(up, -1);
+      if (pressed.has('KeyE')) moveVec.addScaledVector(up, 1);
+
+      if (moveVec.lengthSq() > 0) {
+        moveVec.normalize().multiplyScalar(speed);
+        cam.position.add(moveVec);
+        controls.target.add(moveVec);
+        controls.update();
+        setStudioView('free');
+      }
+
+      raf = requestAnimationFrame(step);
+    };
+
+    const isTyping = () => {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName.toLowerCase();
+      return tag === 'input' || tag === 'textarea' || (el as HTMLElement).isContentEditable;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isTyping()) {
+        isTypingRef.current = true;
+        return;
+      }
+      const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight'];
+      if (!codes.includes(e.code)) return;
+      e.preventDefault();
+      pressed.add(e.code);
+      if (!raf) raf = requestAnimationFrame(step);
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight'];
+      if (!codes.includes(e.code)) return;
+      pressed.delete(e.code);
+      if (pressed.size === 0 && raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+      if (isTypingRef.current && !isTyping()) {
+        isTypingRef.current = false;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [setStudioView, flySpeed]);
 
   return (
     <OrbitControls
@@ -144,6 +229,7 @@ const PostProcessingEffects: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mo
   if (mode === 'studio') return null;
 
   const CAM_Z = 0.2;
+  const focusDistanceEffective = Number.isFinite(focusDistance) ? focusDistance : 1000;
 
   // 三个彩色目标在世界坐标中的位置（需要与 World.tsx 保持一致）
   const posBlue = useMemo(
@@ -186,8 +272,8 @@ const PostProcessingEffects: React.FC<{ mode: 'studio' | 'viewfinder' }> = ({ mo
     }
 
     // 否则沿光轴方向对焦
-    return [cameraX, cameraY, CAM_Z - focusDistance] as [number, number, number];
-  }, [focusDistance, posBlue, posGreen, posRed, camPos, cameraX, cameraY]);
+    return [cameraX, cameraY, CAM_Z - focusDistanceEffective] as [number, number, number];
+  }, [focusDistance, focusDistanceEffective, posBlue, posGreen, posRed, camPos, cameraX, cameraY]);
 
   // 2）物理 DoF：与 MathPanel 同步，驱动 worldFocusRange 与真实 CoC
   const metrics = useMemo(
@@ -274,8 +360,44 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
     setStudioView,
     studioView,
     setFocusDistance,
+    lightLevel,
+    setLightLevel,
   } = useOpticalStore();
   const [focusBoxPos, setFocusBoxPos] = useState({ x: 50, y: 50 });
+  const [flySpeed, setFlySpeed] = useState(0.35);
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1024,
+  );
+  const showFlyHud = true;
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Responsive scaling for HUDs; smooth piecewise to avoid sudden shrink at 1024px
+  const hudScale = useMemo(() => {
+    const highW = 1400;
+    const midW = 1024;
+    const lowW = 640;
+    const high = 0.9;
+    const mid = 0.8;
+    const low = 0.65;
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    if (viewportWidth >= highW) return high;
+    if (viewportWidth >= midW) {
+      const t = (viewportWidth - midW) / (highW - midW);
+      return lerp(mid, high, t);
+    }
+    if (viewportWidth >= lowW) {
+      const t = (viewportWidth - lowW) / (midW - lowW);
+      return lerp(low, mid, t);
+    }
+    return low;
+  }, [viewportWidth]);
 
   const handleViewfinderClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -315,7 +437,10 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
 
       {/* Studio 视角切换按钮 */}
       {mode === 'studio' && (
-        <div className="absolute top-4 right-4 z-20 flex flex-col gap-1 items-end">
+        <div
+          className="absolute top-4 right-4 z-20 flex flex-col gap-1 items-end"
+          style={{ transform: `scale(${hudScale})`, transformOrigin: 'top right' }}
+        >
           {([
             { key: 'topCamera', label: 'TOP (CAMERA)' },
             { key: 'topFocus', label: 'TOP (FOCUS)' },
@@ -337,6 +462,67 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
               {view.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Lighting Slider (Studio Only) */}
+      {mode === 'studio' && (
+        <div
+          className="absolute bottom-4 left-4 z-30 flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-full px-3 py-2 backdrop-blur"
+          style={{ transform: `scale(${hudScale})`, transformOrigin: 'bottom left' }}
+        >
+          <span className="text-lg leading-none">🌙</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={lightLevel}
+            onChange={(e) => setLightLevel(parseFloat(e.target.value))}
+            className="w-36 accent-amber-300 bg-transparent cursor-pointer"
+            aria-label="Lighting from night to day"
+          />
+          <span className="text-lg leading-none">☀️</span>
+        </div>
+      )}
+
+      {/* Studio keyboard hint + speed */}
+      {mode === 'studio' && showFlyHud && (
+        <div
+          className="absolute bottom-3 right-3 z-30 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-3 backdrop-blur shadow-lg w-[164px]"
+          style={{ transform: `scale(${hudScale})`, transformOrigin: 'bottom right' }}
+        >
+          <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono uppercase tracking-wider">
+            <span>Fly Speed</span>
+            <span className="text-cyan-300">{flySpeed.toFixed(2)}</span>
+          </div>
+          <input
+            type="range"
+            min={0.1}
+            max={2}
+            step={0.05}
+            value={flySpeed}
+            onChange={(e) => setFlySpeed(parseFloat(e.target.value))}
+            className="w-full accent-white bg-slate-800/90 h-1 rounded-full my-2"
+            aria-label="Adjust fly speed"
+          />
+          <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 text-[11px] font-mono text-white mt-1">
+            {[
+              { key: 'Q', label: 'Down' },
+              { key: 'W', label: 'Forward' },
+              { key: 'E', label: 'Up' },
+              { key: 'A', label: 'Left' },
+              { key: 'S', label: 'Back' },
+              { key: 'D', label: 'Right' },
+            ].map((item) => (
+              <div key={item.key} className="flex flex-col items-center gap-0.5">
+                <div className="w-7 h-7 flex items-center justify-center bg-slate-800/90 border border-slate-700 rounded-sm">
+                  {item.key}
+                </div>
+                <span className="text-[10px] text-slate-400 leading-none">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -461,7 +647,7 @@ export const Experience: React.FC<ExperienceProps> = ({ mode }) => {
           <PostProcessingEffects mode={mode} />
         </Suspense>
 
-        {mode === 'studio' && <StudioControls />}
+        {mode === 'studio' && <StudioControls flySpeed={flySpeed} />}
 
         {mode === 'studio' && (
           <PerspectiveCamera makeDefault position={[6, 3, 6]} fov={50} />

@@ -40,7 +40,8 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
     setFocusDistance,
     distBlue, distGreen, distRed,
     posBlueX, posGreenX, posRedX,
-    cameraX, cameraY
+    cameraX, cameraY,
+    lightLevel
   } = useOpticalStore();
   
   // Refs for animation
@@ -57,10 +58,13 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
   const lensBarrelLength = BASE_LENS_LENGTH * lensLengthScale;
 
   // Calculate Optics for Visual Guides
-  const metrics = useMemo(() => 
-    calculateOptics(focalLength, aperture, focusDistance, sensorType),
-    [focalLength, aperture, focusDistance, sensorType]
+  const metrics = useMemo(
+    () => calculateOptics(focalLength, aperture, focusDistance, sensorType),
+    [focalLength, aperture, focusDistance, sensorType],
   );
+
+  // Clamp infinite focus for visualization to keep geometry sane
+  const focusDistanceVisual = Number.isFinite(focusDistance) ? focusDistance : 60;
 
   // Calculate Frustum Dimensions based on Sensor & Focal Length
   const fovVisuals = useMemo(() => {
@@ -77,7 +81,7 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
         return { w, h };
     };
 
-    const focusDims = getDimsAt(focusDistance);
+    const focusDims = getDimsAt(focusDistanceVisual);
 
     const zNear = Math.max(0.1, metrics.nearLimit);
     const VISUAL_MAX = 60; 
@@ -93,7 +97,7 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
 
     return {
         aspect,
-        focus: { w: focusDims.w, h: focusDims.h, z: -(focusDistance + CAM_Z) },
+        focus: { w: focusDims.w, h: focusDims.h, z: -(focusDistanceVisual + CAM_Z) },
         dof: {
             wNear: dimsNear.w,
             wFar: dimsFar.w,
@@ -105,17 +109,20 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
         cone: { w: dimsCone.w, h: dimsCone.h, z: -zConeEnd }
     };
 
-  }, [sensorType, focalLength, focusDistance, metrics]);
+  }, [sensorType, focalLength, focusDistanceVisual, metrics]);
 
   // Image Space / Sensor Placement Logic
   const lensModel = useMemo(() => {
     const f = focalLength / 1000; 
-    const L = Math.max(f + 0.001, focusDistance); 
+    const focusForCalc = Number.isFinite(focusDistance) ? focusDistance : Infinity;
+    const L = Math.max(f + 0.001, focusForCalc); 
 
     // Thin lens: 1/f = 1/L + 1/v  =>  v = fL / (L - f)
     let imageDistance = f;
     const denom = L - f;
-    if (Math.abs(denom) > 1e-4) {
+    if (!Number.isFinite(L)) {
+      imageDistance = f; // focus at infinity -> image plane at focal length
+    } else if (Math.abs(denom) > 1e-4) {
       imageDistance = (f * L) / denom;
     }
 
@@ -127,6 +134,43 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
     };
   }, [focalLength, focusDistance, sensorType]);
 
+  // Night-to-day lighting blend driven by studio slider
+  const lighting = useMemo(() => {
+    const mix = (a: number, b: number) => a + (b - a) * lightLevel;
+
+    const sky = new T.Color('#050b14').lerp(new T.Color('#e8f1ff'), lightLevel);
+    const coolKey = new T.Color('#22d3ee').lerp(new T.Color('#ffe6a4'), lightLevel * 0.6);
+    const warmRim = new T.Color('#f43f5e').lerp(new T.Color('#fff2d8'), lightLevel * 0.8);
+
+    return {
+      sky: `#${sky.getHexString()}`,
+      ambient: mix(0.2, 1.0),
+      fill: mix(200, 800),
+      key: mix(400, 950),
+      rim: mix(200, 550),
+      keyColor: `#${coolKey.getHexString()}`,
+      rimColor: `#${warmRim.getHexString()}`,
+    };
+  }, [lightLevel]);
+
+  // DoF cone styling: strengthen contrast for daytime
+  const dofVisual = useMemo(() => {
+    const base = new T.Color('#22d3ee');
+    const day = new T.Color('#0ea5e9');
+    const edgeDay = new T.Color('#67e8f9');
+
+    const color = base.lerp(day, lightLevel * 0.7);
+    const edgeColor = base.clone().lerp(edgeDay, lightLevel);
+
+    const opacity = 0.12 + lightLevel * 0.25; // 0.12 (night) -> 0.37 (day)
+    return {
+      color: `#${color.getHexString()}`,
+      edge: `#${edgeColor.getHexString()}`,
+      opacity,
+      focusColor: `#${edgeDay.getHexString()}`,
+      focusOpacity: 0.25 + lightLevel * 0.35, // 0.25 -> 0.6
+    };
+  }, [lightLevel]);
 
   useFrame((state) => {
     if(sphereRef.current) sphereRef.current.rotation.y += 0.005;
@@ -150,11 +194,12 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
 
   return (
     <>
-      <color attach="background" args={['#050b14']} />
+      <color attach="background" args={[lighting.sky]} />
       
-      <pointLight position={[10, 10, 10]} intensity={200} castShadow color="#ffffff" />
-      <spotLight position={[-10, 15, 5]} angle={0.3} penumbra={1} intensity={400} color="#22d3ee" castShadow />
-      <spotLight position={[0, 5, -20]} angle={0.6} intensity={200} color="#f43f5e" />
+      <ambientLight intensity={lighting.ambient} color={lighting.sky} />
+      <pointLight position={[10, 10, 10]} intensity={lighting.fill} castShadow color="#ffffff" />
+      <spotLight position={[-10, 15, 5]} angle={0.3} penumbra={1} intensity={lighting.key} color={lighting.keyColor} castShadow />
+      <spotLight position={[0, 5, -20]} angle={0.6} intensity={lighting.rim} color={lighting.rimColor} />
       
       <Grid 
         position={[0, -0.01, 0]} 
@@ -195,18 +240,24 @@ export const World: React.FC<WorldProps> = ({ mode }) => {
                         Math.PI / 4 
                     ]} 
                 />
-                <meshBasicMaterial color="#22d3ee" opacity={0.1} transparent side={T.DoubleSide} depthWrite={false} />
+                <meshBasicMaterial color={dofVisual.color} opacity={dofVisual.opacity} transparent side={T.DoubleSide} depthWrite={false} />
             </mesh>
             
             {/* 3. Focus Plane */}
             <group position={[0, 0, fovVisuals.focus.z]}>
                 <mesh raycast={() => null}>
                     <planeGeometry args={[fovVisuals.focus.w, fovVisuals.focus.h]} />
-                    <meshBasicMaterial color="#ffffff" opacity={0.2} transparent side={T.DoubleSide} depthWrite={false} />
+                    <meshBasicMaterial
+                      color={dofVisual.focusColor}
+                      opacity={dofVisual.focusOpacity}
+                      transparent
+                      side={T.DoubleSide}
+                      depthWrite={false}
+                    />
                 </mesh>
                 <lineSegments>
                     <edgesGeometry args={[new T.PlaneGeometry(fovVisuals.focus.w, fovVisuals.focus.h)]} />
-                    <lineBasicMaterial color="#ffffff" opacity={0.6} transparent />
+                    <lineBasicMaterial color={dofVisual.edge} opacity={0.85} transparent />
                 </lineSegments>
                 <Text 
                     position={[-fovVisuals.focus.w/2 - 0.2, 0, 0]} 

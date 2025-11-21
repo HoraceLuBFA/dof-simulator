@@ -167,7 +167,9 @@ export const SchematicView: React.FC = () => {
   const cameraSvgY = mapZ(0);
   const cameraSvgX = mapX(cameraX);
   
-  const focusY = mapZ(focusDistance);
+  const focusPlaneVisualZ = Number.isFinite(focusDistance) ? focusDistance : WORLD_DEPTH_METERS;
+  const focusLabel = Number.isFinite(focusDistance) ? `${focusDistance.toFixed(1)} m` : '∞';
+  const focusY = mapZ(Math.min(focusPlaneVisualZ, WORLD_DEPTH_METERS));
   const nearY = mapZ(metrics.nearLimit);
   
   // Frustum Drawing
@@ -258,12 +260,12 @@ export const SchematicView: React.FC = () => {
         />
         
         {/* Focus Plane (draggable) */}
-        <g onPointerDown={(e) => handleFocusPointerDown(e, focusDistance)} className="cursor-ns-resize">
+        <g onPointerDown={(e) => handleFocusPointerDown(e, focusPlaneVisualZ)} className="cursor-ns-resize">
           {/* Larger hit area for touch/drag */}
           <rect x={0} y={focusY - 6} width={SVG_WIDTH} height={12} fill="transparent" />
           <line x1={0} y1={focusY} x2={SVG_WIDTH} y2={focusY} stroke="#ffffff" strokeWidth="2" strokeDasharray="4 2" opacity="0.5" />
           <text x="10" y={focusY - 5} fill="#ffffff" fontSize="10" className="font-mono">
-            FOCUS PLANE ({focusDistance.toFixed(1)} m)
+            FOCUS PLANE ({focusLabel})
           </text>
         </g>
 

@@ -25,6 +25,10 @@ interface ExtendedState extends SimulationState {
   cameraY: number;
   moveCamera: (dx: number, dy: number) => void;
   resetCamera: () => void;
+
+  // Scene lighting
+  lightLevel: number; // 0 = night, 1 = bright day
+  setLightLevel: (v: number) => void;
   
   // Reset all scene positions
   resetScene: () => void;
@@ -54,6 +58,9 @@ export const useOpticalStore = create<ExtendedState>((set, get) => ({
   cameraX: 0,
   cameraY: 1.0,
 
+  // Lighting defaults to current night look
+  lightLevel: 0,
+
   studioView: 'reset',
 
   setFocalLength: (v) => set({ focalLength: v }),
@@ -74,6 +81,8 @@ export const useOpticalStore = create<ExtendedState>((set, get) => ({
     // Clamp Y to not go below floor (0.1) or too high
     cameraY: parseFloat(Math.max(0.2, Math.min(5, state.cameraY + dy)).toFixed(2))
   })),
+
+  setLightLevel: (v) => set({ lightLevel: Math.min(1, Math.max(0, v)) }),
   
   resetCamera: () => set({ cameraX: 0, cameraY: 1.0 }),
 

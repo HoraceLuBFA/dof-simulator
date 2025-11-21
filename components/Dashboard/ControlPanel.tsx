@@ -5,6 +5,22 @@ import { Slider } from '../UI/Slider';
 import { SensorType } from '../../types';
 import { getSensorDimensions } from '../../utils/optics';
 
+const FOCUS_MIN = 0.5;
+const FOCUS_INF_THRESHOLD = 0.995; // top 0.5% becomes ∞
+const FOCUS_EXP_SPAN = Math.log(60 / FOCUS_MIN); // exponential spread to push mid-range finer control
+
+const sliderToFocusDistance = (v: number) => {
+  if (v >= FOCUS_INF_THRESHOLD) return Infinity;
+  const dist = FOCUS_MIN * Math.exp(v * FOCUS_EXP_SPAN);
+  return parseFloat(dist.toFixed(2));
+};
+
+const focusDistanceToSlider = (d: number) => {
+  if (!Number.isFinite(d)) return 1;
+  const raw = Math.log(d / FOCUS_MIN) / FOCUS_EXP_SPAN;
+  return Math.max(0, Math.min(FOCUS_INF_THRESHOLD, raw));
+};
+
 export const ControlPanel: React.FC = () => {
   const { 
     focalLength, setFocalLength,
@@ -76,12 +92,13 @@ export const ControlPanel: React.FC = () => {
 
         <Slider
           label="Focus Distance"
-          value={focusDistance}
-          min={0.5}
-          max={30}
-          step={0.1}
+          value={focusDistanceToSlider(focusDistance)}
+          min={0}
+          max={1}
+          step={0.002}
           unit=" m"
-          onChange={setFocusDistance}
+          displayValue={Number.isFinite(focusDistance) ? `${focusDistance.toFixed(2)} m` : '∞'}
+          onChange={(v) => setFocusDistance(sliderToFocusDistance(v))}
         />
       </div>
 

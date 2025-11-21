@@ -63,6 +63,18 @@ export const calculateOptics = (
   // Hyperfocal Distance: H = f^2 / (N * c) + f
   const H = (Math.pow(f_m, 2) / (aperture * coc_m)) + f_m;
 
+  // Infinity focus guard: avoid NaN from Infinity arithmetic
+  if (!Number.isFinite(focusDistance)) {
+    return {
+      hyperfocalDistance: H,
+      nearLimit: H,
+      farLimit: Infinity,
+      totalDepth: Infinity,
+      dofInFront: Infinity,
+      dofBehind: Infinity,
+    };
+  }
+
   // Near Limit: Dn = (H * s) / (H + (s - f))
   const s = focusDistance;
   const nearLimit = (H * s) / (H + (s - f_m));
